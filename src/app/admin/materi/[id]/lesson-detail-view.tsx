@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface LessonDetail {
   id: string;
@@ -20,9 +20,18 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
-  const [ttsSupported] = useState(
-    () => typeof window !== "undefined" && "speechSynthesis" in window,
-  );
+  // Mulai true (server & client sama) agar tidak terjadi hydration mismatch;
+  // status sebenarnya dideteksi setelah render di browser.
+  const [ttsSupported, setTtsSupported] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setTtsSupported(
+        typeof window !== "undefined" && "speechSynthesis" in window,
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const speak = useCallback(
     (text: string) => {
