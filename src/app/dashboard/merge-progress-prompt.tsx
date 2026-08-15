@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const FREE_STORAGE_KEY = "em_free_progress";
 const MERGE_DONE_KEY = "em_merge_done";
@@ -20,9 +20,16 @@ function readHasLocalProgress(): boolean {
 }
 
 export default function MergeProgressPrompt() {
-  const [hasLocal] = useState(() => readHasLocalProgress());
+  // Selalu mulai false (server & client sama) untuk hindari hydration mismatch,
+  // lalu deteksi setelah render di browser.
+  const [hasLocal, setHasLocal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setHasLocal(readHasLocalProgress()), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   async function merge() {
     setBusy(true);

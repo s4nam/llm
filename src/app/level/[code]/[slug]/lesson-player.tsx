@@ -22,9 +22,8 @@ export default function LessonPlayer({
   const [saving, setSaving] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reportMsg, setReportMsg] = useState<string | null>(null);
-  const [ttsEnabled] = useState(
-    () => typeof window !== "undefined" && "speechSynthesis" in window,
-  );
+  // Selalu true di awal (server & client sama), lalu diperiksa ulang setelah mount.
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [writingText, setWritingText] = useState("");
   const [writingFeedback, setWritingFeedback] = useState<string | null>(null);
@@ -32,6 +31,16 @@ export default function LessonPlayer({
   const [writingQuota, setWritingQuota] = useState<{ used: number; limit: number } | null>(null);
   const [writingLoading, setWritingLoading] = useState(false);
   const audioRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Deteksi dukungan TTS setelah mount (hindari hydration mismatch)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setTtsEnabled(
+        typeof window !== "undefined" && "speechSynthesis" in window,
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // Catat akses pelajaran + bump streak (hanya jika login)
   useEffect(() => {

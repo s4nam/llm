@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/header";
 
@@ -22,7 +22,14 @@ function detectStatus(): Status {
 }
 
 export default function AuthConfirmPage() {
-  const [status] = useState<Status>(() => detectStatus());
+  // Selalu mulai "loading" (server & client sama) agar tidak terjadi
+  // hydration mismatch. Status sebenarnya dideteksi setelah render di browser.
+  const [status, setStatus] = useState<Status>("loading");
+
+  useEffect(() => {
+    const t = setTimeout(() => setStatus(detectStatus()), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-12">

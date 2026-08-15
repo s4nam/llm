@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { FreeLesson } from "@/lib/types";
 
@@ -31,11 +31,18 @@ export default function LessonPlayer({
     Array(lesson.quiz.length).fill(null),
   );
   const [submitted, setSubmitted] = useState(false);
-  const [progress, setProgress] = useState<Stored>(() => loadProgress());
-  const [promptJoin, setPromptJoin] = useState(() => {
-    const p = loadProgress();
-    return p[lesson.id]?.completed ?? false;
-  });
+  // Mulai kosong (server & client sama), lalu dimuat setelah mount.
+  const [progress, setProgress] = useState<Stored>({});
+  const [promptJoin, setPromptJoin] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const p = loadProgress();
+      setProgress(p);
+      setPromptJoin(Boolean(p[lesson.id]?.completed));
+    }, 0);
+    return () => clearTimeout(t);
+  }, [lesson.id]);
 
   const answeredCount = answers.filter((a) => a !== null).length;
   const canSubmit = answeredCount === lesson.quiz.length;
