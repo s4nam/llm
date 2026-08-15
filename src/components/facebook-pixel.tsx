@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 
 const COOKIE_KEY = "em_cookie_consent";
 
@@ -9,11 +9,11 @@ const COOKIE_KEY = "em_cookie_consent";
  * (kepatuhan UU PDP). Pixel memuat sekali lalu mengirim event.
  */
 export default function FacebookPixel() {
-  useState(() => {
-    if (typeof window === "undefined") return false;
-    if (localStorage.getItem(COOKIE_KEY) !== "allowed") return false;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(COOKIE_KEY) !== "allowed") return;
     const pixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
-    if (!pixelId) return false;
+    if (!pixelId) return;
 
     try {
       const w = window as unknown as {
@@ -33,11 +33,10 @@ export default function FacebookPixel() {
       const fbq = w.fbq as (cmd: string, ev: string, ...rest: unknown[]) => void;
       fbq("init", pixelId);
       fbq("track", "PageView");
-      return true;
     } catch {
-      return false;
+      // abaikan — pixel tidak dimuat
     }
-  });
+  }, []);
 
   return null;
 }

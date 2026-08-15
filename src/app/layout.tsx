@@ -54,10 +54,12 @@ export default function RootLayout({
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      { }
       <body className="flex min-h-full flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
         <FacebookPixel />
-      </body>    </html>
+      </body>
+    </html>
   );
 }

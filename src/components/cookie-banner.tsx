@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const COOKIE_KEY = "em_cookie_consent";
 
-function hasConsent(): boolean {
-  if (typeof window === "undefined") return true;
-  return localStorage.getItem(COOKIE_KEY) !== null;
-}
-
 export default function CookieBanner() {
-  const [visible, setVisible] = useState(() => !hasConsent());
+  // Selalu mulai tersembunyi (server & client sama) agar tidak terjadi
+  // hydration mismatch. Banner muncul setelah render di browser.
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (typeof window !== "undefined" && !localStorage.getItem(COOKIE_KEY)) {
+        setVisible(true);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   function decide(choice: "allowed" | "denied") {
     localStorage.setItem(COOKIE_KEY, choice);
