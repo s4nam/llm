@@ -20,8 +20,25 @@ export async function login(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // Jangan bocorkan apakah email/password salah untuk alasan keamanan
-    return { message: "Email atau kata sandi salah." };
+    const msg = String(error.message ?? "").toLowerCase();
+    // Kasus umum dengan pesan yang membantu:
+    if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+      return {
+        message:
+          "Email Anda belum diverifikasi. Cek inbox/spam Anda dan klik tautan verifikasi dari Supabase. Jika tautan kedaluwarsa, daftar ulang atau hubungi kami.",
+      };
+    }
+    if (
+      msg.includes("invalid login credentials") ||
+      msg.includes("invalid credentials") ||
+      msg.includes("password") ||
+      msg.includes("email")
+    ) {
+      // Aman untuk ditampilkan — tidak membocorkan informasi spesifik.
+      return { message: "Email atau kata sandi salah. Periksa kembali." };
+    }
+    // Pesan lain dari Supabase (mis. rate limit) — tampilkan supaya jelas.
+    return { message: error.message };
   }
 
   redirect("/dashboard");
