@@ -190,8 +190,8 @@ export default function LessonPlayer({
             </p>
             <p className="text-sm text-brand-light">
               {nextLesson
-                ? "Lanjut belajar tanpa login, atau daftar untuk menyimpan progress."
-                : "Daftar sekarang untuk membuka semua level dan materi lengkap."}
+                ? "Progress tersimpan di perangkat ini. Daftar gratis agar tersimpan permanen & bisa lanjut di HP lain."
+                : "Daftar gratis untuk membuka semua level, materi lengkap, dan sertifikat."}
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -207,7 +207,7 @@ export default function LessonPlayer({
               href="/daftar"
               className="rounded-xl border border-white/60 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark"
             >
-              Daftar &amp; Simpan Progress
+              Daftar Gratis
             </Link>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function LessonPlayer({
         <p className="text-center text-sm text-slate-500">
           ✨ Anda pernah menyelesaikan pelajaran ini di perangkat ini.{" "}
           <Link href="/daftar" className="font-medium text-brand underline">
-            Daftar untuk menyimpan progress
+            Daftar gratis untuk menyimpan progress ke akun
           </Link>
         </p>
       )}
