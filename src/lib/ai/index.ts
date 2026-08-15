@@ -96,10 +96,19 @@ export async function generateWithFallback(
     const apiKey = keys[provider];
     if (!apiKey) continue;
 
+    // Model default per provider (jika model saat ini tidak cocok dengan provider)
+    const defaultModelFor: Record<string, string> = {
+      openai: "gpt-4o-mini",
+      gemini: "gemini-3-flash-preview",
+      claude: "claude-3-5-haiku",
+    };
+    const requestedModel = opts?.model;
     const model =
-      provider === requestedProvider && opts?.model
-        ? opts.model
-        : settings.defaultModel;
+      provider === requestedProvider && requestedModel
+        ? requestedModel
+        : settings.defaultModel in (PROVIDER_MODELS[provider]?.map((m) => m.id) ?? [])
+          ? settings.defaultModel
+          : (defaultModelFor[provider] ?? settings.defaultModel);
 
     try {
       return await callProvider(

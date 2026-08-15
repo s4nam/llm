@@ -104,11 +104,18 @@ export async function PUT(request: Request) {
   const { decryptKey } = await import("@/lib/ai/keys");
   const apiKey = decryptKey(encrypted);
 
+  // Default model per provider (untuk test koneksi)
+  const defaultModels: Record<string, string> = {
+    openai: "gpt-4o-mini",
+    gemini: "gemini-3-flash-preview",
+    claude: "claude-3-5-haiku",
+  };
+
   try {
     const result = await callProvider(
       provider,
       apiKey,
-      model || "gpt-4o-mini",
+      model || defaultModels[provider] || "gpt-4o-mini",
       [{ role: "user", content: "Reply with the single word: OK" }],
       20,
     );
