@@ -2,11 +2,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import {
-  createClient,
-  isSupabaseConfigured,
-} from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { CEFR_LEVELS } from "@/lib/types";
+import MergeProgressPrompt from "./merge-progress-prompt";
 
 const LEVEL_NAMES: Record<string, string> = {
   A1: "Pemula",
@@ -53,7 +51,7 @@ export default async function DashboardPage() {
     user.email?.split("@")[0] ||
     "Sahabat EnglishMudah";
 
-  // Hitung jumlah pelajaran publik per level (RLS: hanya published/free terlihat)
+  // Jumlah pelajaran publik per level
   const { data: published } = await supabase
     .from("lessons")
     .select("level_code")
@@ -63,6 +61,31 @@ export default async function DashboardPage() {
     counts[row.level_code] = (counts[row.level_code] ?? 0) + 1;
   }
 
+  // Progress user per level (count pelajaran yang completed)
+  const { data: progress } = await supabase
+    .from("user_progress")
+    .select("lesson_id, completed")
+    .eq("user_id", user.id);
+  const completedLessonIds = new Set(
+    (progress ?? []).filter((p) => p.completed).map((p) => p.lesson_id),
+  );
+
+  // Sertifikat user
+  const { data: certificates } = await supabase
+    .from("certificates")
+    .select("level_code")
+    .eq("user_id", user.id);
+  const earnedLevels = new Set((certificates ?? []).map((c) => c.level_code));
+
+  // Streak
+  const { data: streak } = await supabase
+    .from("user_streaks")
+    .select("current_streak, best_streak")
+    .eq("user_id", user.id)
+    .single();
+
+  const isNewUser = completedLessonIds.size === 0;
+
   return (
     <>
       <Header />
@@ -71,9 +94,39 @@ export default async function DashboardPage() {
           Assalamu&apos;alaikum, {name} 👋
         </h1>
         <p className="mt-2 text-slate-600">
-          Pilih level untuk mulai belajar, atau kerjakan tes penempatan agar
-          kami menyarankan level yang pas.
+          Lanjutkan belajar atau pilih level baru.
         </p>
+
+        {/* Panduan cara pakai (untuk pengguna baru) */}
+        {isNewUser && (
+          <div className="mt-6 rounded-2xl border border-brand bg-brand-light/30 p-6">
+            <h2 className="text-lg font-semibold text-slate-900">
+              🎉 Selamat datang! Cara pakainya gampang:
+            </h2>
+            <ol className="mt-3 flex flex-col gap-2 text-sm text-slate-700">
+              <li>1️⃣ Pilih level di bawah (atau kerjakan tes penempatan).</li>
+              <li>2️⃣ Buka pelajaran → baca materi → kerjakan soal.</li>
+              <li>3️⃣ Dapat nilai ≥60% = pelajaran selesai.</li>
+              <li>4️⃣ Selesaikan semua pelajaran di level → klaim sertifikat 🏅.</li>
+            </ol>
+          </div>
+        )}
+
+        {/* Stat mini */}
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+            <p className="text-2xl font-bold text-brand">{completedLessonIds.size}</p>
+            <p className="text-xs text-slate-500">Pelajaran selesai</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+            <p className="text-2xl font-bold text-brand">{streak?.current_streak ?? 0}🔥</p>
+            <p className="text-xs text-slate-500">Streak hari ini</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+            <p className="text-2xl font-bold text-brand">{earnedLevels.size}</p>
+            <p className="text-xs text-slate-500">Sertifikat</p>
+          </div>
+        </div>
 
         {/* Placement */}
         <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-brand-light/50 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -93,14 +146,16 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        {/* Gabung progress browser */}
+        <MergeProgressPrompt />
+
         {/* Levels */}
-        <h2 className="mt-8 text-lg font-semibold text-slate-900">
-          Pilih Level
-        </h2>
+        <h2 className="mt-8 text-lg font-semibold text-slate-900">Pilih Level</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CEFR_LEVELS.map((code) => {
             const count = counts[code] ?? 0;
             const ready = count > 0;
+            const earned = earnedLevels.has(code);
             return (
               <div
                 key={code}
@@ -123,6 +178,7 @@ export default async function DashboardPage() {
                   <div>
                     <p className="font-semibold text-slate-900">
                       {LEVEL_NAMES[code] ?? code}
+                      {earned && <span className="ml-1 text-success">🏅</span>}
                     </p>
                     <p className="text-sm text-slate-500">
                       {ready
@@ -148,19 +204,19 @@ export default async function DashboardPage() {
           })}
         </div>
 
-        {/* Free lessons */}
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Ingin coba tanpa daftar?
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            3 pelajaran gratis bisa dibuka tanpa login.
-          </p>
+        {/* Profil link */}
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/profil"
+            className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Profil &amp; Sertifikat
+          </Link>
           <Link
             href="/pelajaran-gratis"
-            className="mt-4 inline-block rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
+            className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Buka Pelajaran Gratis
+            Pelajaran Gratis
           </Link>
         </div>
       </main>

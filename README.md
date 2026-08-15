@@ -66,7 +66,7 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 |---|---|
 | F1 — Fondasi (landing, auth, 3 pelajaran gratis) | ✅ Selesai |
 | F2 — Mesin AI (multi-provider, generate materi) | ✅ Selesai |
-| F3 — Learning Flow (dashboard, kuis, sertifikat) | ⏳ |
+| F3 — Learning Flow (belajar, kuis, writing, sertifikat) | ✅ Selesai |
 | F4 — Monetisasi (trial, Midtrans, email) | ⏳ |
 | F5 — Admin & Pantauan | ⏳ |
 | F6 — Launch | ⏳ |
@@ -83,6 +83,9 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 
 ### Menjalankan migration Fase 2
 Jalankan `supabase/migrations/002_ai_engine.sql` di **SQL Editor** Supabase (setelah 001). Ini membuat tabel pengaturan AI, log pemakaian, placement test, dan RPC admin.
+
+### Menjalankan migration Fase 3
+Jalankan `supabase/migrations/003_learning_flow.sql` di **SQL Editor** Supabase (setelah 002). Ini membuat tabel sertifikat, writing submission, log akses pelajaran, streak, dan RPC (export data, hapus akun, klaim sertifikat).
 
 ### Menyiapkan API AI
 1. Buka aplikasi → **Admin → Pengaturan AI**.

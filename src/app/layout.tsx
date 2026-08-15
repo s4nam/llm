@@ -56,7 +56,6 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
-      </body>
-    </html>
+      </body>    </html>
   );
 }
