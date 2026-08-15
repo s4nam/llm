@@ -180,10 +180,10 @@ export default function LessonPlayer({
       </div>
 
       {/* Sections */}
-      {lesson.sections.map((section) => (
+      {lesson.sections.map((section, sIdx) => (
         <section key={section.heading} className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-slate-900">{section.heading}</h2>
-          {lesson.category === "listening" && section.heading.toLowerCase().includes("dengar") ? (
+          {lesson.category === "listening" && sIdx === 0 ? (
             <div className="mt-3">
               <button
                 type="button"
