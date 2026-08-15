@@ -13,9 +13,9 @@ export const PROVIDER_MODELS: Record<
     { id: "gpt-4o", label: "GPT-4o (kualitas)", inputPer1M: 2.5, outputPer1M: 10 },
   ],
   gemini: [
-    { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview (rekomendasi)", inputPer1M: 0.15, outputPer1M: 0.6 },
+    { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (rekomendasi)", inputPer1M: 0.2, outputPer1M: 0.8 },
     { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite (hemat)", inputPer1M: 0.075, outputPer1M: 0.3 },
-    { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", inputPer1M: 0.2, outputPer1M: 0.8 },
+    { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview", inputPer1M: 0.15, outputPer1M: 0.6 },
   ],
   claude: [
     { id: "claude-3-5-haiku", label: "Claude 3.5 Haiku (hemat)", inputPer1M: 1, outputPer1M: 5 },

@@ -99,27 +99,43 @@ export async function generateWithFallback(
     // Model default per provider (jika model saat ini tidak cocok dengan provider)
     const defaultModelFor: Record<string, string> = {
       openai: "gpt-4o-mini",
-      gemini: "gemini-3-flash-preview",
+      gemini: "gemini-3.5-flash",
       claude: "claude-3-5-haiku",
     };
     const requestedModel = opts?.model;
+    const defaultModel =
+      settings.defaultModel in (PROVIDER_MODELS[provider]?.map((m) => m.id) ?? [])
+        ? settings.defaultModel
+        : (defaultModelFor[provider] ?? settings.defaultModel);
     const model =
       provider === requestedProvider && requestedModel
         ? requestedModel
-        : settings.defaultModel in (PROVIDER_MODELS[provider]?.map((m) => m.id) ?? [])
-          ? settings.defaultModel
-          : (defaultModelFor[provider] ?? settings.defaultModel);
+        : defaultModel;
 
-    try {
-      return await callProvider(
-        provider,
-        apiKey,
-        model,
-        messages,
-        opts?.maxTokens ?? 2000,
-      );
-    } catch (err) {
-      lastError = err as Error;
+    // Daftar model yang dicoba untuk provider ini:
+    // model yang diminta/default dulu, lalu model lain di provider yang sama.
+    const providerModels = (PROVIDER_MODELS[provider] ?? []).map((m) => m.id);
+    const candidates = [
+      model,
+      ...providerModels.filter((m) => m !== model),
+      ...Object.values(defaultModelFor).filter((m) => m !== model && !providerModels.includes(m)),
+    ];
+    // de-duplikasi
+    const uniqueCandidates = [...new Set(candidates)];
+
+    for (const candidateModel of uniqueCandidates) {
+      try {
+        return await callProvider(
+          provider,
+          apiKey,
+          candidateModel,
+          messages,
+          opts?.maxTokens ?? 2000,
+        );
+      } catch (err) {
+        lastError = err as Error;
+        // lanjut ke model berikutnya di provider yang sama
+      }
     }
   }
 

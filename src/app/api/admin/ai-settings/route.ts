@@ -107,7 +107,7 @@ export async function PUT(request: Request) {
   // Default model per provider (untuk test koneksi)
   const defaultModels: Record<string, string> = {
     openai: "gpt-4o-mini",
-    gemini: "gemini-3-flash-preview",
+    gemini: "gemini-3.5-flash",
     claude: "claude-3-5-haiku",
   };
 
