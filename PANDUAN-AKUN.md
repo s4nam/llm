@@ -112,13 +112,38 @@ Membuat tabel-tabel aplikasi (profil, pelajaran, pembayaran, dll).
 
 1. Di dashboard Supabase, menu **"Authentication"** → **"Providers"** → **"Google"**.
 2. Aktifkan toggle **"Enable Sign in with Google"**.
-3. Ikuti petunjuk di sana untuk membuat Client ID & Client Secret di
-   Google Cloud Console (gratis, ±15 menit).
-4. Di menu **"Authentication" → "URL Configuration"**:
+   - **"Skip nonce checks"** → biarkan OFF
+   - **"Allow users without an email"** → biarkan OFF
+3. Di menu **"Authentication" → "URL Configuration"**:
    - **Site URL**: `http://localhost:3000` (untuk tes lokal) — nanti ganti ke
      `https://englishmudah.id` setelah go-live.
    - **Redirect URLs**: tambahkan `http://localhost:3000/auth/callback` dan
      `https://englishmudah.id/auth/callback`.
+
+#### Buat Client ID & Secret di Google Cloud Console
+1. Buka **https://console.cloud.google.com** → login dengan akun Google Anda.
+2. Buat **New Project** (nama: `englishmudah`) → klik project tersebut.
+3. Menu **☰ → APIs & Services → OAuth consent screen** → pilih **External** →
+   isi App name + support email → Save.
+4. Menu **☰ → APIs & Services → Credentials** → **+ CREATE CREDENTIALS →
+   OAuth client ID** → **Application type: Web application**.
+5. Isi **Authorized JavaScript origins**: `http://localhost:3000`.
+6. Isi **Authorized redirect URIs** (WAJIB ADA SEMUA — yang ketiga paling
+   sering terlewat):
+   ```
+   http://localhost:3000/auth/callback
+   https://englishmudah.id/auth/callback
+   https://fbsjklwndftcazdkkzee.supabase.co/auth/v1/callback
+   ```
+   > 🔑 **Penting:** URL ketiga (`...supabase.co/auth/v1/callback`) adalah
+   > callback milik Supabase. Google mewajibkannya. Ganti `fbsjklwndftcazdkkzee`
+   > dengan `ref` project Anda (lihat bagian kiri URL Supabase dashboard).
+7. Klik **CREATE** → salin **Client ID** & **Client Secret**.
+8. Kembali ke Supabase → tempel Client ID & Client Secret → **Save**.
+
+> ⚠️ Jika error `redirect_uri_mismatch` muncul saat login Google, berarti URL
+> callback Supabase (`...supabase.co/auth/v1/callback`) belum didaftarkan di
+> langkah 6. Tambahkan, lalu coba lagi.
 
 ---
 
