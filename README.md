@@ -2,6 +2,8 @@
 
 Aplikasi kursus Bahasa Inggris online berbasis AI (SaaS). Belajar dari level A1 (pemula) sampai C2 (lancar) — materi digenerate AI, trial 3 hari, langganan bulanan/tahunan.
 
+> 📘 **Panduan akun langkah demi langkah:** baca **[PANDUAN-AKUN.md](./PANDUAN-AKUN.md)** untuk membuat akun Supabase & Midtrans (dibuat untuk pemula tanpa pengalaman teknis).
+
 ## Teknologi
 
 - **Next.js 16** (React, App Router, TypeScript)
