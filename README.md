@@ -161,7 +161,7 @@ Jalankan `supabase/migrations/005_admin_monitoring.sql` di **SQL Editor** Supaba
 ## Checklist Launch (Fase 6)
 
 ### Sebelum go-live (wajib)
-- [ ] Jalankan seluruh migration SQL 001–007 di Supabase.
+- [ ] Jalankan seluruh migration SQL 001–008 di Supabase.
 - [ ] Konfigurasi AI (min. 1 provider) + test koneksi.
 - [ ] **Generate Level A1 lengkap** via Admin → Kelola Materi → "Generate Level A1" → setujui 20 pelajaran satu per satu.
 - [ ] Generate soal placement test.

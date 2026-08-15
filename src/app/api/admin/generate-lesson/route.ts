@@ -86,6 +86,7 @@ export async function POST(request: Request) {
     }
 
     // Simpan sebagai draft (belum publish — menunggu approval admin)
+    // Pakai RPC security definer agar tidak terhalang RLS (admin_create_lesson).
     const slugBase = `${level}-${category}-${topic
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -93,23 +94,21 @@ export async function POST(request: Request) {
       .slice(0, 40)}`;
     const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-    const { data: lesson, error: insertError } = await supabase
-      .from("lessons")
-      .insert({
-        level_code: level,
-        category,
-        title: draft.topic,
-        slug,
-        intro: draft.intro,
-        sections: draft.sections,
-        quiz: draft.quiz,
-        is_free: isFree,
-        status: "draft",
-      })
-      .select("id")
-      .single();
+    const { data: lessonId, error: insertError } = await supabase.rpc(
+      "admin_create_lesson",
+      {
+        p_level_code: level,
+        p_category: category,
+        p_title: draft.topic,
+        p_slug: slug,
+        p_intro: draft.intro,
+        p_sections: draft.sections,
+        p_quiz: draft.quiz,
+        p_is_free: isFree,
+      },
+    );
 
-    if (insertError || !lesson) {
+    if (insertError || !lessonId) {
       throw new Error(insertError?.message ?? "Gagal menyimpan pelajaran.");
     }
 
@@ -117,10 +116,10 @@ export async function POST(request: Request) {
     await logAiUsage({
       result,
       purpose: "lesson",
-      lessonId: lesson.id,
+      lessonId,
     });
 
-    return NextResponse.json({ lessonId: lesson.id });
+    return NextResponse.json({ lessonId });
   } catch (err) {
     return NextResponse.json(
       { error: (err as Error).message },
