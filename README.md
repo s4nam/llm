@@ -68,7 +68,7 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 | F2 — Mesin AI (multi-provider, generate materi) | ✅ Selesai |
 | F3 — Learning Flow (belajar, kuis, writing, sertifikat) | ✅ Selesai |
 | F4 — Monetisasi (trial, Midtrans, email) | ✅ Selesai |
-| F5 — Admin & Pantauan | ⏳ |
+| F5 — Admin & Pantauan | ✅ Selesai |
 | F6 — Launch | ⏳ |
 
 ## Panduan Admin (Fase 2)
@@ -120,6 +120,33 @@ Jalankan `supabase/migrations/004_monetization.sql` di **SQL Editor** Supabase (
 
 ### Atur harga & kupon
 - Login admin → **Admin → Monetisasi** → set harga bulanan/tahunan, durasi trial, buat kupon (% / nominal), dan kelola member (perpanjang manual / reset trial).
+
+## Panduan Admin & Pantauan (Fase 5)
+
+### Menjalankan migration Fase 5
+Jalankan `supabase/migrations/005_admin_monitoring.sql` di **SQL Editor** Supabase (setelah 004). Ini menambah statistik admin, daftar laporan, dan tabel keamanan 2FA.
+
+### Dashboard admin
+- **Admin → Dashboard**: total pengguna, member aktif, pengguna baru, pendapatan 30 hari, konversi trial, dan pelajaran terpopuler.
+- **Admin → Laporan**: tangani laporan masalah dari siswa; tandai selesai setelah materi diperbaiki.
+- **Admin → Keamanan**: aktifkan **2FA (Google Authenticator)** + 10 kode cadangan.
+
+### Aktifkan 2FA admin
+1. **Admin → Keamanan → Aktifkan 2FA**.
+2. Pindai QR dengan aplikasi Google Authenticator.
+3. Masukkan kode 6 digit → simpan 10 kode cadangan di tempat aman.
+4. Kode cadangan hanya muncul sekali dan dipakai sekali (sekali pakai).
+
+### SOP Backup (lakukan bulanan)
+1. **Supabase Dashboard → Database → Backups**: Supabase otomatis mencadangkan database.
+2. Uji pemulihan: buat project Supabase baru sementara → Restore backup → pastikan data muncul (dokumen, pengguna, progress).
+3. Simpan catatan hasil uji di mana pun Anda biasa menyimpan catatan (misal Google Drive).
+
+### Monitoring mingguan (10 menit)
+1. Buka aplikasi dari HP → login → buka beberapa halaman (pastikan normal).
+2. Cek **Admin → Monitoring** untuk biaya AI tidak normal.
+3. Cek **Admin → Laporan** untuk keluhan baru.
+4. Periksa email inbox untuk notifikasi pembayaran/webhook bermasalah.
 
 ### Menyiapkan API AI
 1. Buka aplikasi → **Admin → Pengaturan AI**.
