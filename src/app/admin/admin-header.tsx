@@ -13,6 +13,9 @@ export default function AdminHeader() {
             <Link href="/admin/materi" className="hover:text-sky-300">
               Materi
             </Link>
+            <Link href="/admin/pengaturan-ai" className="hover:text-sky-300">
+              Pengaturan AI
+            </Link>
             <Link href="/admin/monitoring" className="hover:text-sky-300">
               Monitoring
             </Link>
@@ -42,6 +45,9 @@ export default function AdminHeader() {
       <nav className="mx-auto flex max-w-6xl items-center gap-4 overflow-x-auto px-4 pb-3 text-sm sm:hidden">
         <Link href="/admin/materi" className="shrink-0 text-sky-300">
           Materi
+        </Link>
+        <Link href="/admin/pengaturan-ai" className="shrink-0 text-sky-300">
+          Pengaturan AI
         </Link>
         <Link href="/admin/monitoring" className="shrink-0 text-sky-300">
           Monitoring
