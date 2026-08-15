@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signup, resendVerification } from "@/app/actions/auth";
-import { Logo } from "@/components/header";
+import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, undefined);

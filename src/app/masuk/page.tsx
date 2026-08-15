@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { login } from "@/app/actions/login";
-import { Logo } from "@/components/header";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);

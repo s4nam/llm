@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/header";
+import { Logo } from "@/components/logo";
 
 export default function AdminSetupPage() {
   const router = useRouter();

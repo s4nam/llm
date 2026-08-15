@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Logo } from "@/components/header";
+import { Logo } from "@/components/logo";
 
 function PaymentStatusInner() {
   const searchParams = useSearchParams();
