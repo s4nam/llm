@@ -36,6 +36,12 @@ export default function MonitoringView() {
         <p className="mt-1 text-3xl font-bold text-slate-900">
           Rp {totalCost.toLocaleString("id-ID")}
         </p>
+        <p className="mt-2 rounded-lg bg-brand-light/40 p-3 text-xs leading-5 text-slate-600">
+          💡 Angka ini <b>hanya perkiraan</b> (berdasarkan harga publik model).
+          Jika memakai <b>Gemini API gratis</b>, Anda <b>tidak akan ditagih</b> —
+          ini hanya tolok ukur seandainya berbayar. Anda juga bisa lihat jumlah
+          token di tabel di bawah.
+        </p>
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
