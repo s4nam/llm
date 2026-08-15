@@ -65,16 +65,46 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 | Fase | Status |
 |---|---|
 | F1 — Fondasi (landing, auth, 3 pelajaran gratis) | ✅ Selesai |
-| F2 — Mesin AI (multi-provider, generate materi) | ⏳ Berikutnya |
+| F2 — Mesin AI (multi-provider, generate materi) | ✅ Selesai |
 | F3 — Learning Flow (dashboard, kuis, sertifikat) | ⏳ |
 | F4 — Monetisasi (trial, Midtrans, email) | ⏳ |
 | F5 — Admin & Pantauan | ⏳ |
 | F6 — Launch | ⏳ |
 
+## Panduan Admin (Fase 2)
+
+### Menjadi Admin pertama
+1. Daftar/login akun Anda di aplikasi (seperti biasa).
+2. Di Supabase Dashboard → **SQL Editor**, jalankan:
+   ```sql
+   update public.profiles set role = 'admin' where email = 'EMAIL_ANDA';
+   ```
+3. Logout lalu login kembali. Menu Admin muncul di aplikasi.
+
+### Menjalankan migration Fase 2
+Jalankan `supabase/migrations/002_ai_engine.sql` di **SQL Editor** Supabase (setelah 001). Ini membuat tabel pengaturan AI, log pemakaian, placement test, dan RPC admin.
+
+### Menyiapkan API AI
+1. Buka aplikasi → **Admin → Pengaturan AI**.
+2. Isi minimal 1 API key (OpenAI/Gemini/Claude). Gemini memiliki free tier.
+3. Pilih provider & model default → **Test Koneksi** → **Simpan Pengaturan**.
+4. Pastikan `SESSION_SECRET` terisi di `.env.local` (dipakai untuk mengenkripsi API key).
+
+### Membuat materi
+1. **Admin → Kelola Materi** → pilih level + kategori + topik → **Generate Materi (AI)**.
+2. Materi muncul sebagai **draft** di **Daftar Materi**.
+3. Buka draft → **Pratinjau** → jika bagus klik **Setujui & Tampilkan**, jika kurang klik **Regenerate** atau **Tolak**.
+4. Materi yang disetujui langsung tampil di dashboard siswa sesuai levelnya.
+
+### Tes penempatan
+1. **Admin → Kelola Materi** → generate soal placement (via API /dashboard admin nanti), atau jalankan RPC.
+2. Siswa mengerjakannya di `/placement-test` → dapat rekomendasi level.
+
 ## Struktur Folder Penting
 
 - `src/app/` — halaman-halaman aplikasi
 - `src/components/` — komponen UI bersama
+- `src/lib/ai/` — mesin AI (provider, prompt, enkripsi key, estimasi biaya)
 - `src/lib/` — logika & data (brand, tipe, pelajaran gratis, Supabase)
 - `src/proxy.ts` — refresh sesi (pengganti middleware di Next.js 16)
 - `supabase/migrations/` — skema database
