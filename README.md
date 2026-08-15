@@ -82,6 +82,11 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 4. Masukkan **kode admin** dari `.env.local` (variabel `ADMIN_SETUP_CODE`).
 5. Klik "Jadikan Saya Admin" → otomatis jadi admin (tanpa SQL manual).
 
+> **PENTING:** jalankan juga migration `007_fix_lessons_rls.sql` — ini
+> memperbaiki kebijakan RLS tabel `lessons` agar admin bisa menyimpan materi
+> yang digenerate AI. Tanpa migration ini, generate materi akan gagal dengan
+> error "new row violates row-level security policy".
+
 > Cara lama (opsional, jika kode tidak mau): di Supabase SQL Editor jalankan
 > `update public.profiles set role = 'admin' where email = 'EMAIL_ANDA';`
 > hanya setelah akun Anda terdaftar & login.
@@ -156,7 +161,7 @@ Jalankan `supabase/migrations/005_admin_monitoring.sql` di **SQL Editor** Supaba
 ## Checklist Launch (Fase 6)
 
 ### Sebelum go-live (wajib)
-- [ ] Jalankan seluruh migration SQL 001–006 di Supabase.
+- [ ] Jalankan seluruh migration SQL 001–007 di Supabase.
 - [ ] Konfigurasi AI (min. 1 provider) + test koneksi.
 - [ ] **Generate Level A1 lengkap** via Admin → Kelola Materi → "Generate Level A1" → setujui 20 pelajaran satu per satu.
 - [ ] Generate soal placement test.
