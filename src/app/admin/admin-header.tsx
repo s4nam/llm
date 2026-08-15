@@ -19,6 +19,9 @@ export default function AdminHeader() {
             <Link href="/admin/monitoring" className="hover:text-sky-300">
               Monitoring
             </Link>
+            <Link href="/admin/monetisasi" className="hover:text-sky-300">
+              Monetisasi
+            </Link>
           </nav>
         </div>
         <form action={logout}>
@@ -39,6 +42,9 @@ export default function AdminHeader() {
         </Link>
         <Link href="/admin/monitoring" className="text-sky-300">
           Monitoring
+        </Link>
+        <Link href="/admin/monetisasi" className="text-sky-300">
+          Monetisasi
         </Link>
       </nav>
     </header>

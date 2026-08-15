@@ -21,6 +21,11 @@ export default async function AdminPage() {
       desc: "Lihat pemakaian token, estimasi biaya, dan log permintaan AI.",
       href: "/admin/monitoring",
     },
+    {
+      title: "Monetisasi",
+      desc: "Atur harga paket, buat kupon, dan kelola status member.",
+      href: "/admin/monetisasi",
+    },
   ];
 
   return (

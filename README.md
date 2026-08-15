@@ -67,7 +67,7 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 | F1 — Fondasi (landing, auth, 3 pelajaran gratis) | ✅ Selesai |
 | F2 — Mesin AI (multi-provider, generate materi) | ✅ Selesai |
 | F3 — Learning Flow (belajar, kuis, writing, sertifikat) | ✅ Selesai |
-| F4 — Monetisasi (trial, Midtrans, email) | ⏳ |
+| F4 — Monetisasi (trial, Midtrans, email) | ✅ Selesai |
 | F5 — Admin & Pantauan | ⏳ |
 | F6 — Launch | ⏳ |
 
@@ -86,6 +86,40 @@ Jalankan `supabase/migrations/002_ai_engine.sql` di **SQL Editor** Supabase (set
 
 ### Menjalankan migration Fase 3
 Jalankan `supabase/migrations/003_learning_flow.sql` di **SQL Editor** Supabase (setelah 002). Ini membuat tabel sertifikat, writing submission, log akses pelajaran, streak, dan RPC (export data, hapus akun, klaim sertifikat).
+
+### Menjalankan migration Fase 4
+Jalankan `supabase/migrations/004_monetization.sql` di **SQL Editor** Supabase (setelah 003). Ini membuat konfigurasi harga, riwayat membership, log webhook, dispute, dan RPC pembayaran (trial, set member, expire, admin).
+
+## Panduan Monetisasi (Fase 4)
+
+### Setup Midtrans
+1. Daftar di https://midtrans.com (pakai KTP + rekening bank untuk verifikasi).
+2. Ambil **Server Key** & **Client Key** dari dashboard Midtrans (mulai dari Sandbox).
+3. Isi `.env.local`:
+   ```
+   MIDTRANS_SERVER_KEY=SB-Mid-server-xxxx
+   NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxx
+   MIDTRANS_IS_PRODUCTION=false
+   ```
+4. **Webhook URL**: di dashboard Midtrans, set Payment Notification URL ke `https://ANDA.vercel.app/api/payments/webhook`.
+5. Saat siap go-live: set `MIDTRANS_IS_PRODUCTION=true` + ganti ke production key (butuh persetujuan Midtrans).
+
+### Setup Email (Resend)
+1. Daftar di https://resend.com (gratis, ada kuota bulanan).
+2. Tambahkan domain Anda → ikuti setup SPF/DKIM agar email tidak masuk spam.
+3. Isi `.env.local`:
+   ```
+   RESEND_API_KEY=re_xxxx
+   RESEND_FROM_EMAIL=admin@englishmudah.id
+   RESEND_FROM_NAME=englishmudah.id
+   ```
+
+### Setup Cron (Vercel)
+- File `vercel.json` sudah berisi jadwal tiap 6 jam. Cron menangani: nonaktifkan member expired, cek ulang pembayaran pending, kirim email pengingat trial H-1 & perpanjangan H-3/H-1.
+- Tambahkan environment variable `CRON_SECRET` (string acak) dan sertakan header `x-cron-secret` saat memanggil `/api/cron` (Vercel Cron mengizinkan header).
+
+### Atur harga & kupon
+- Login admin → **Admin → Monetisasi** → set harga bulanan/tahunan, durasi trial, buat kupon (% / nominal), dan kelola member (perpanjang manual / reset trial).
 
 ### Menyiapkan API AI
 1. Buka aplikasi → **Admin → Pengaturan AI**.

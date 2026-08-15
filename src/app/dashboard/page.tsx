@@ -84,6 +84,18 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .single();
 
+  // Status member / trial
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_member, member_expires_at, trial_expires_at")
+    .eq("id", user.id)
+    .single();
+  const { computeAccess } = await import("@/lib/access");
+  const access = computeAccess(profile);
+  const memberEnds = profile?.member_expires_at
+    ? new Date(profile.member_expires_at)
+    : null;
+
   const isNewUser = completedLessonIds.size === 0;
 
   return (
@@ -127,6 +139,45 @@ export default async function DashboardPage() {
             <p className="text-xs text-slate-500">Sertifikat</p>
           </div>
         </div>
+
+        {/* Status langganan */}
+        {access.isMember ? (
+          <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border-2 border-success bg-success/5 p-5">
+            <div>
+              <p className="font-semibold text-success">✓ Member aktif</p>
+              <p className="text-sm text-slate-600">
+                {memberEnds
+                  ? `Berlaku sampai ${memberEnds.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
+                  : "Akses penuh semua level."}
+              </p>
+            </div>
+            <Link
+              href="/langganan"
+              className="shrink-0 rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Kelola
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border-2 border-brand bg-brand-light/30 p-5">
+            <div>
+              <p className="font-semibold text-slate-900">
+                {access.trialActive ? "⏳ Masa trial aktif" : "Akses terbatas"}
+              </p>
+              <p className="text-sm text-slate-600">
+                {access.trialActive
+                  ? "Nikmati akses penuh selama trial. "
+                  : "Langganan atau trial untuk membuka semua level & pelajaran."}
+              </p>
+            </div>
+            <Link
+              href="/langganan"
+              className="shrink-0 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              {access.trialActive ? "Perpanjang" : "Langganan"}
+            </Link>
+          </div>
+        )}
 
         {/* Placement */}
         <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-brand-light/50 p-5 sm:flex-row sm:items-center sm:justify-between">

@@ -4,6 +4,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { CATEGORY_LABELS, type LessonDetail } from "@/lib/types";
+import { computeAccess } from "@/lib/access";
 import LessonPlayer from "./lesson-player";
 
 export default async function LessonPage({
@@ -32,13 +33,14 @@ export default async function LessonPage({
 
   if (!lesson) notFound();
 
-  // Cek status member (dari profile)
+  // Cek status akses (member / trial)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_member")
+    .select("is_member, member_expires_at, trial_expires_at")
     .eq("id", user.id)
     .single();
-  const isMember = profile?.is_member === true || Boolean(lesson.is_free);
+  const access = computeAccess(profile);
+  const hasAccess = access.hasAccess || Boolean(lesson.is_free);
 
   const typed: LessonDetail = {
     id: lesson.id,
@@ -68,11 +70,11 @@ export default async function LessonPage({
         </p>
         <h1 className="mt-1 text-3xl font-bold text-slate-900">{lesson.title}</h1>
 
-        {!isMember && !lesson.is_free && (
+        {!hasAccess && (
           <div className="mt-4 rounded-xl bg-brand-light/60 p-4 text-sm">
             <p className="text-slate-700">
               Pelajaran ini untuk member.{" "}
-              <Link href="/masuk" className="font-semibold text-brand underline">
+              <Link href="/langganan" className="font-semibold text-brand underline">
                 Langganan
               </Link>{" "}
               untuk membuka semua materi.
@@ -80,7 +82,7 @@ export default async function LessonPage({
           </div>
         )}
 
-        <LessonPlayer lesson={typed} isMember={isMember} />
+        <LessonPlayer lesson={typed} isMember={hasAccess} />
       </main>
       <Footer />
     </>
