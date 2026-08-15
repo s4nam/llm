@@ -53,8 +53,7 @@ export default function RootLayout({
     <html
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      { }
+    >{/* root layout */}
       <body className="flex min-h-full flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
