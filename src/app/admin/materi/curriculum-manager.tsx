@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CEFR_LEVELS, CATEGORIES, type Category, type CefrLevel } from "@/lib/types";
 import { getCurriculumForLevel } from "@/lib/curriculum";
@@ -16,6 +17,7 @@ export interface CurriculumRow {
 const TARGET_PER_CATEGORY = 4;
 
 export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
+  const router = useRouter();
   const [level, setLevel] = useState<CefrLevel>("A1");
   const [category, setCategory] = useState<Category>("vocabulary");
   const [topic, setTopic] = useState("");
@@ -86,6 +88,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
           : `${succeeded}/${topics.length} berhasil, ${failed} gagal: ${failures.slice(0, 5).join(", ")}`,
     });
     setGeneratingLevel(false);
+    router.refresh();
   }
 
   async function generate() {
@@ -110,6 +113,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
           text: "Materi berhasil dibuat (draft). Buka di daftar Materi untuk pratinjau & persetujuan.",
         });
         setTopic("");
+        router.refresh();
       }
     } catch {
       setMessage({ type: "err", text: "Terjadi kesalahan jaringan." });
@@ -133,6 +137,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
           type: "ok",
           text: `Soal placement test berhasil dibuat (${data.count} soal). Siswa bisa mengerjakannya di /placement-test.`,
         });
+        router.refresh();
       }
     } catch {
       setMessage({ type: "err", text: "Terjadi kesalahan jaringan." });
