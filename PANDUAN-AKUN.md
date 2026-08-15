@@ -73,40 +73,40 @@ Membuat tabel-tabel aplikasi (profil, pelajaran, pembayaran, dll).
 ### 1.5. Menjadikan Diri Anda Admin
 
 > ⚠️ **PENTING — urutannya begini:**
-> Perintah admin baru berhasil **setelah Anda mendaftar** di aplikasi.
-> Tabel `profiles` berisi data akun yang terdaftar — baris Anda baru dibuat
-> otomatis saat mendaftar di aplikasi. Jadi jangan lompat ke langkah ini.
+> Anda harus **mendaftar dan login dulu** di aplikasi, karena tabel `profiles`
+> baru berisi baris akun Anda setelah terdaftar. Ada DUA cara — pilih yang
+> paling mudah (Cara A lebih disarankan, tanpa perlu menulis SQL).
 
-**Urutan yang benar:**
+**Urutan yang benar (untuk keduanya):**
 1. Jalankan aplikasi: `npm run dev` → buka `http://localhost:3000`.
 2. Buka halaman **Daftar** (`/daftar`) → isi email, nama, password →
    centang persetujuan → **Daftar**.
 3. **Verifikasi email** (klik tautan dari Supabase di inbox — cek spam jika
    tidak muncul; berlaku 24 jam).
 4. **Login** di aplikasi (`/masuk`).
-5. Setelah login berhasil, lakukan langkah di bawah ini.
 
-**Langkah admin:**
-1. Di dashboard Supabase, klik menu **"SQL Editor"**.
-2. Buat query baru.
-3. Tempel perintah ini (ganti `EMAIL_ANDA` dengan email yang Anda pakai
-   mendaftar):
+**Cara A — Klaim Admin via aplikasi (disarankan):**
+1. Jalankan migration `006_admin_setup.sql` di SQL Editor Supabase.
+2. Buka `http://localhost:3000/admin/setup`.
+3. Masukkan **kode admin** yang ada di file `.env.local`
+   (variabel `ADMIN_SETUP_CODE`).
+4. Klik **"Jadikan Saya Admin"** → selesai, langsung jadi admin.
+
+**Cara B — Via SQL Editor (cara lama):**
+1. Di dashboard Supabase, buka menu **"SQL Editor"** → query baru.
+2. Jalankan (ganti `EMAIL_ANDA` dengan email Anda):
    ```sql
    update public.profiles
    set role = 'admin'
    where email = 'EMAIL_ANDA';
    ```
-4. Klik **"Run"**. Muncul pesan "Success" (boleh "No rows returned").
-5. Verifikasi berhasil dengan:
-   ```sql
-   select email, role from public.profiles where email = 'EMAIL_ANDA';
-   ```
-   Harus tampil `role = 'admin'`.
-6. Buka aplikasi lagi (atau logout lalu login) → menu Admin sudah muncul.
+3. Klik **"Run"** → muncul "Success".
+4. Verifikasi: `select email, role from public.profiles where email = 'EMAIL_ANDA';`
+   → harus tampil `role = 'admin'`.
 
 > Jika hasil query verifikasi **kosong (tidak ada baris)**, artinya akun
-> belum terdaftar. Ulangi langkah 1–4 di atas (daftar + verifikasi email),
-> lalu jalankan perintah admin lagi.
+> belum terdaftar. Ulangi langkah 1–4 (daftar + verifikasi email), lalu
+> jalankan kembali perintah admin.
 
 ### 1.6. (Opsional) Mengaktifkan Login Google
 

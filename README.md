@@ -77,11 +77,14 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 
 ### Menjadi Admin pertama
 1. Daftar/login akun Anda di aplikasi (seperti biasa).
-2. Di Supabase Dashboard → **SQL Editor**, jalankan:
-   ```sql
-   update public.profiles set role = 'admin' where email = 'EMAIL_ANDA';
-   ```
-3. Logout lalu login kembali. Menu Admin muncul di aplikasi.
+2. Jalankan migration `006_admin_setup.sql` di SQL Editor Supabase (sekali saja).
+3. Buka `http://localhost:3000/admin/setup`.
+4. Masukkan **kode admin** dari `.env.local` (variabel `ADMIN_SETUP_CODE`).
+5. Klik "Jadikan Saya Admin" → otomatis jadi admin (tanpa SQL manual).
+
+> Cara lama (opsional, jika kode tidak mau): di Supabase SQL Editor jalankan
+> `update public.profiles set role = 'admin' where email = 'EMAIL_ANDA';`
+> hanya setelah akun Anda terdaftar & login.
 
 ### Menjalankan migration Fase 2
 Jalankan `supabase/migrations/002_ai_engine.sql` di **SQL Editor** Supabase (setelah 001). Ini membuat tabel pengaturan AI, log pemakaian, placement test, dan RPC admin.
@@ -153,7 +156,7 @@ Jalankan `supabase/migrations/005_admin_monitoring.sql` di **SQL Editor** Supaba
 ## Checklist Launch (Fase 6)
 
 ### Sebelum go-live (wajib)
-- [ ] Jalankan seluruh migration SQL 001–005 di Supabase.
+- [ ] Jalankan seluruh migration SQL 001–006 di Supabase.
 - [ ] Konfigurasi AI (min. 1 provider) + test koneksi.
 - [ ] **Generate Level A1 lengkap** via Admin → Kelola Materi → "Generate Level A1" → setujui 20 pelajaran satu per satu.
 - [ ] Generate soal placement test.
