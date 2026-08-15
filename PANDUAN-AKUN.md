@@ -72,19 +72,41 @@ Membuat tabel-tabel aplikasi (profil, pelajaran, pembayaran, dll).
 
 ### 1.5. Menjadikan Diri Anda Admin
 
+> ⚠️ **PENTING — urutannya begini:**
+> Perintah admin baru berhasil **setelah Anda mendaftar** di aplikasi.
+> Tabel `profiles` berisi data akun yang terdaftar — baris Anda baru dibuat
+> otomatis saat mendaftar di aplikasi. Jadi jangan lompat ke langkah ini.
+
+**Urutan yang benar:**
+1. Jalankan aplikasi: `npm run dev` → buka `http://localhost:3000`.
+2. Buka halaman **Daftar** (`/daftar`) → isi email, nama, password →
+   centang persetujuan → **Daftar**.
+3. **Verifikasi email** (klik tautan dari Supabase di inbox — cek spam jika
+   tidak muncul; berlaku 24 jam).
+4. **Login** di aplikasi (`/masuk`).
+5. Setelah login berhasil, lakukan langkah di bawah ini.
+
+**Langkah admin:**
 1. Di dashboard Supabase, klik menu **"SQL Editor"**.
 2. Buat query baru.
 3. Tempel perintah ini (ganti `EMAIL_ANDA` dengan email yang Anda pakai
-   mendaftar di aplikasi nanti):
+   mendaftar):
    ```sql
    update public.profiles
    set role = 'admin'
    where email = 'EMAIL_ANDA';
    ```
-4. Klik **"Run"**.
+4. Klik **"Run"**. Muncul pesan "Success" (boleh "No rows returned").
+5. Verifikasi berhasil dengan:
+   ```sql
+   select email, role from public.profiles where email = 'EMAIL_ANDA';
+   ```
+   Harus tampil `role = 'admin'`.
+6. Buka aplikasi lagi (atau logout lalu login) → menu Admin sudah muncul.
 
-> Jika belum ada akun di aplikasi, daftar dulu di aplikasi (langkah setelah
-> aplikasi jalan), lalu jalankan perintah ini lagi.
+> Jika hasil query verifikasi **kosong (tidak ada baris)**, artinya akun
+> belum terdaftar. Ulangi langkah 1–4 di atas (daftar + verifikasi email),
+> lalu jalankan perintah admin lagi.
 
 ### 1.6. (Opsional) Mengaktifkan Login Google
 
