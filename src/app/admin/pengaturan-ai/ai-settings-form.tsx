@@ -10,11 +10,21 @@ type SettingsState = {
   budgetAlarmIdr: number;
 } | null;
 
-const PROVIDERS: { id: ProviderId; label: string; placeholder: string }[] = [
-  { id: "openai", label: "OpenAI", placeholder: "sk-..." },
-  { id: "gemini", label: "Google Gemini", placeholder: "AIza..." },
-  { id: "claude", label: "Claude (Anthropic)", placeholder: "sk-ant-..." },
+const PROVIDERS: { id: ProviderId; label: string; placeholder: string; hint: string }[] = [
+  { id: "openai", label: "OpenAI", placeholder: "sk-...", hint: "Dimulai dengan sk-" },
+  { id: "gemini", label: "Google Gemini", placeholder: "AIza... / AQ.Ab8...", hint: "Dimulai dengan AIza atau AQ." },
+  { id: "claude", label: "Claude (Anthropic)", placeholder: "sk-ant-...", hint: "Dimulai dengan sk-ant-" },
 ];
+
+/** Deteksi kemungkinan provider berdasarkan prefiks key. */
+function detectProvider(key: string): ProviderId | null {
+  const k = key.trim();
+  if (!k) return null;
+  if (/^sk-ant-/i.test(k)) return "claude";
+  if (/^sk-/i.test(k)) return "openai";
+  if (/^AIza/i.test(k) || /^AQ\./i.test(k)) return "gemini";
+  return null;
+}
 
 export default function AiSettingsForm() {
   const [settings, setSettings] = useState<SettingsState>(null);
@@ -98,30 +108,60 @@ export default function AiSettingsForm() {
           dikosongkan). Kunci disimpan terenkripsi.
         </p>
         <div className="mt-4 flex flex-col gap-4">
-          {PROVIDERS.map((p) => (
-            <div key={p.id}>
-              <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
-                {p.label}
-                {settings?.configured?.[p.id] ? (
-                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
-                    ✓ Terisi
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                    Kosong
-                  </span>
+          {PROVIDERS.map((p) => {
+            const typed = (keys[p.id] ?? "").trim();
+            const detected = detectProvider(typed);
+            const mismatch = typed.length > 0 && detected !== null && detected !== p.id;
+            return (
+              <div key={p.id}>
+                <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  {p.label}
+                  {settings?.configured?.[p.id] ? (
+                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
+                      ✓ Terisi
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                      Kosong
+                    </span>
+                  )}
+                  {typed.length > 0 && !settings?.configured?.[p.id] && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                      Perlu Simpan
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="password"
+                  value={keys[p.id] ?? ""}
+                  onChange={(e) => setKeys((k) => ({ ...k, [p.id]: e.target.value }))}
+                  placeholder={settings?.configured?.[p.id] ? "•••••••• (biarkan kosong jika tidak diganti)" : p.placeholder}
+                  className={`w-full rounded-lg border px-4 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-brand-light ${
+                    mismatch ? "border-danger" : "border-slate-300 focus:border-brand"
+                  }`}
+                />
+                <p className="mt-1 text-xs text-slate-400">{p.hint}</p>
+                {mismatch && (
+                  <p className="mt-1 text-xs text-danger">
+                    ⚠️ Key ini terlihat seperti key {detected === "gemini" ? "Google Gemini" : detected === "openai" ? "OpenAI" : "Claude"} — pindahkan ke kolom yang sesuai.
+                  </p>
                 )}
-              </label>
-              <input
-                type="password"
-                value={keys[p.id] ?? ""}
-                onChange={(e) => setKeys((k) => ({ ...k, [p.id]: e.target.value }))}
-                placeholder={settings?.configured?.[p.id] ? "•••••••• (biarkan kosong jika tidak diganti)" : p.placeholder}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
-              />
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
+
+        {/* Tombol simpan cepat di bagian key */}
+        {Object.values(keys).some((k) => k.trim().length > 0) && (
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="mt-4 w-full rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          >
+            {saving ? "Menyimpan..." : "💾 Simpan API Key Sekarang"}
+          </button>
+        )}
       </section>
 
       {/* Provider & model default */}
