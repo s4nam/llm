@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 interface LessonDetail {
   id: string;
@@ -19,6 +19,30 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [ttsSupported] = useState(
+    () => typeof window !== "undefined" && "speechSynthesis" in window,
+  );
+
+  const speak = useCallback(
+    (text: string) => {
+      if (!ttsSupported) return;
+      if (speaking) {
+        window.speechSynthesis.cancel();
+        setSpeaking(false);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = 0.9;
+      utter.onend = () => setSpeaking(false);
+      utter.onerror = () => setSpeaking(false);
+      setSpeaking(true);
+      window.speechSynthesis.speak(utter);
+    },
+    [ttsSupported, speaking],
+  );
 
   async function act(action: string) {
     setBusy(action);
@@ -101,6 +125,23 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
       {lesson.sections.map((s, i) => (
         <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6">
           <h3 className="font-semibold text-slate-900">{s.heading}</h3>
+          {lesson.category === "listening" && i === 0 && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => speak(s.body)}
+                disabled={!ttsSupported}
+                className="mb-3 inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+              >
+                {speaking ? "⏸ Berhenti" : "🔊 Dengarkan"}
+              </button>
+              {!ttsSupported && (
+                <p className="mb-2 text-sm text-slate-500">
+                  Browser ini tidak mendukung suara. Anda tetap bisa cek transkrip di bawah.
+                </p>
+              )}
+            </div>
+          )}
           <div className="mt-2 whitespace-pre-line leading-7 text-slate-700">{s.body}</div>
         </div>
       ))}
