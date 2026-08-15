@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/daftar`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/masuk`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${base}/kontak`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
     { url: `${base}/syarat-ketentuan`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/kebijakan-privasi`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];

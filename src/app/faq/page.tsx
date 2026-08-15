@@ -32,6 +32,22 @@ const faqs = [
     q: "Level mana yang cocok untuk saya?",
     a: "Anda bisa mengerjakan tes penempatan singkat saat mendaftar, atau memilih level secara manual. Level tersedia dari A1 (pemula) sampai C2 (lancar).",
   },
+  {
+    q: "Apa itu CEFR dan mengapa penting?",
+    a: "CEFR (Common European Framework of Reference) adalah standar internasional untuk tingkat kemampuan bahasa, dari A1 (pemula) sampai C2 (setara penutur asli). Menggunakan CEFR berarti level Anda diakui secara global.",
+  },
+  {
+    q: "Materinya berasal dari mana?",
+    a: "Materi dibuat dengan bantuan kecerdasan buatan (AI) lalu diperiksa oleh tim sebelum ditayangkan. Jika Anda menemukan kekeliruan, gunakan tombol 'Laporkan masalah' di dalam pelajaran.",
+  },
+  {
+    q: "Apakah saya mendapat sertifikat?",
+    a: "Ya. Selesaikan semua pelajaran di satu level dengan nilai minimal 60%, lalu klaim sertifikat. Sertifikat bisa diverifikasi online dan dibagikan.",
+  },
+  {
+    q: "Saya butuh bantuan, hubungi siapa?",
+    a: "Hubungi kami lewat WhatsApp. Nomor dukungan tercantum di halaman Kontak/FAQ aplikasi.",
+  },
 ];
 
 export default function FaqPage() {

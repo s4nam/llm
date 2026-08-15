@@ -5,6 +5,7 @@ const footerLinks = [
   { label: "Coba Gratis", href: "/pelajaran-gratis" },
   { label: "Daftar", href: "/daftar" },
   { label: "FAQ", href: "/faq" },
+  { label: "Kontak", href: "/kontak" },
   { label: "Syarat & Ketentuan", href: "/syarat-ketentuan" },
   { label: "Kebijakan Privasi", href: "/kebijakan-privasi" },
 ];

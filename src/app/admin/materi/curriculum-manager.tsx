@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CEFR_LEVELS, CATEGORIES, type Category, type CefrLevel } from "@/lib/types";
+import { getCurriculumForLevel } from "@/lib/curriculum";
 
 export interface CurriculumRow {
   level_code: string;
@@ -20,14 +21,52 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
   const [topic, setTopic] = useState("");
   const [isFree, setIsFree] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingLevel, setGeneratingLevel] = useState(false);
   const [generatingPlacement, setGeneratingPlacement] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [levelResult, setLevelResult] = useState<{ total: number; succeeded: number; failed: number } | null>(null);
 
   const grid = useMemo(() => {
     const map = new Map<string, CurriculumRow>();
     for (const r of rows) map.set(`${r.level_code}|${r.category}`, r);
     return map;
   }, [rows]);
+
+  async function generateLevel() {
+    const topics = getCurriculumForLevel(level);
+    const confirmText = window.confirm(
+      `Generate seluruh level ${level}?\n\n${topics.length} pelajaran akan dibuat (draft) satu per satu. Semua tetap harus disetujui dulu sebelum tampil.\n\nEstimasi biaya token: sekitar Rp 200 – 10.000 tergantung model & provider yang dipakai.\n\nLanjutkan?`,
+    );
+    if (!confirmText) return;
+    setGeneratingLevel(true);
+    setMessage(null);
+    setLevelResult(null);
+    try {
+      const res = await fetch("/api/admin/generate-level", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "err", text: data.error ?? "Gagal generate level." });
+      } else {
+        setLevelResult({
+          total: data.total,
+          succeeded: data.succeeded,
+          failed: data.failed,
+        });
+        setMessage({
+          type: data.failed === 0 ? "ok" : "err",
+          text: `${data.succeeded}/${data.total} pelajaran berhasil dibuat (draft). Periksa di Daftar Materi untuk menyetujui.`,
+        });
+      }
+    } catch {
+      setMessage({ type: "err", text: "Terjadi kesalahan jaringan." });
+    } finally {
+      setGeneratingLevel(false);
+    }
+  }
 
   async function generate() {
     if (topic.trim().length < 3) {
@@ -84,6 +123,41 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Generate level lengkap */}
+      <section className="rounded-2xl border-2 border-brand bg-brand-light/20 p-6">
+        <h2 className="text-lg font-semibold text-slate-900">
+          🚀 Generate Level Lengkap
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Buat seluruh 20 pelajaran untuk satu level sekaligus (draft). Semua
+          tetap harus disetujui satu per satu sebelum tampil.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <select
+            value={level}
+            onChange={(e) => setLevel(e.target.value as CefrLevel)}
+            className="w-full max-w-xs rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand"
+          >
+            {CEFR_LEVELS.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={generateLevel}
+            disabled={generatingLevel}
+            className="shrink-0 rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          >
+            {generatingLevel ? "Membuat 20 pelajaran..." : `Generate Level ${level}`}
+          </button>
+        </div>
+        {levelResult && (
+          <p className="mt-3 text-sm text-slate-600">
+            {levelResult.succeeded}/{levelResult.total} dibuat. {levelResult.failed} gagal.
+          </p>
+        )}
+      </section>
+
       {/* Form generate */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">

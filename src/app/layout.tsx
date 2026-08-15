@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BRAND } from "@/lib/brand";
 import CookieBanner from "@/components/cookie-banner";
+import FacebookPixel from "@/components/facebook-pixel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
+        <FacebookPixel />
       </body>    </html>
   );
 }

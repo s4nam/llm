@@ -69,7 +69,7 @@ Aplikasi berjalan tanpa Supabase (halaman publik tetap bisa dilihat), tapi **reg
 | F3 — Learning Flow (belajar, kuis, writing, sertifikat) | ✅ Selesai |
 | F4 — Monetisasi (trial, Midtrans, email) | ✅ Selesai |
 | F5 — Admin & Pantauan | ✅ Selesai |
-| F6 — Launch | ⏳ |
+| F6 — Launch | ✅ Selesai |
 
 ## Panduan Admin (Fase 2)
 
@@ -147,6 +147,39 @@ Jalankan `supabase/migrations/005_admin_monitoring.sql` di **SQL Editor** Supaba
 2. Cek **Admin → Monitoring** untuk biaya AI tidak normal.
 3. Cek **Admin → Laporan** untuk keluhan baru.
 4. Periksa email inbox untuk notifikasi pembayaran/webhook bermasalah.
+
+## Checklist Launch (Fase 6)
+
+### Sebelum go-live (wajib)
+- [ ] Jalankan seluruh migration SQL 001–005 di Supabase.
+- [ ] Konfigurasi AI (min. 1 provider) + test koneksi.
+- [ ] **Generate Level A1 lengkap** via Admin → Kelola Materi → "Generate Level A1" → setujui 20 pelajaran satu per satu.
+- [ ] Generate soal placement test.
+- [ ] Konfigurasi Midtrans (sandbox dulu) + set webhook URL.
+- [ ] Konfigurasi Resend (domain + SPF/DKIM).
+- [ ] Konfigurasi Vercel Cron (`/api/cron` tiap 6 jam) + `CRON_SECRET`.
+- [ ] Aktifkan 2FA admin + simpan kode cadangan.
+- [ ] Isi `NEXT_PUBLIC_WHATSAPP_NUMBER` & `NEXT_PUBLIC_FB_PIXEL_ID`.
+- [ ] Pasang domain `englishmudah.id` di Vercel + SSL.
+
+### Uji dari pandangan orang awam (daftar periksa)
+- [ ] Buka beranda → CTA "Coba Gratis" terlihat jelas.
+- [ ] 3 pelajaran gratis terbuka tanpa login; kuis berfungsi; progress tersimpan.
+- [ ] Daftar (nama wajib, centang T&C & izin orang tua) → verifikasi email → login.
+- [ ] Placement test: kerjakan, dapat rekomendasi level, bisa skip.
+- [ ] Trial 3 hari: klik aktifkan → akses penuh.
+- [ ] Halaman langganan menampilkan harga & kupon.
+- [ ] Bayar via Midtrans (sandbox) → member aktif → invoice email.
+- [ ] Belajar penuh → kuis → klaim sertifikat → verifikasi online.
+- [ ] Profil: ganti nama, unduh data JSON, lupa password.
+- [ ] Admin: dashboard, generate materi, monetisasi, laporan, panduan.
+- [ ] Situs cepat di HP (periksa dengan HP Anda sendiri).
+
+### Setelah go-live
+- [ ] Ganti Midtrans ke mode produksi (`MIDTRANS_IS_PRODUCTION=true` + production keys).
+- [ ] Pasang Facebook Pixel → buat kampanye trial 3 hari + retargeting.
+- [ ] Mulai produksi konten level A2–C2 (on-demand lewat admin).
+- [ ] Catatan usaha: saat pendapatan mulai masuk, pertimbangkan mendaftarkan usaha (UMKM/PT) dan kepatuhan PPN sesuai aturan yang berlaku.
 
 ### Menyiapkan API AI
 1. Buka aplikasi → **Admin → Pengaturan AI**.
