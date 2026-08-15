@@ -25,6 +25,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
   const [generatingPlacement, setGeneratingPlacement] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [levelResult, setLevelResult] = useState<{ total: number; succeeded: number; failed: number } | null>(null);
+  const [levelProgress, setLevelProgress] = useState<{ done: number; total: number; current: string } | null>(null);
 
   const grid = useMemo(() => {
     const map = new Map<string, CurriculumRow>();
@@ -41,31 +42,50 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
     setGeneratingLevel(true);
     setMessage(null);
     setLevelResult(null);
-    try {
-      const res = await fetch("/api/admin/generate-level", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ level }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: "err", text: data.error ?? "Gagal generate level." });
-      } else {
-        setLevelResult({
-          total: data.total,
-          succeeded: data.succeeded,
-          failed: data.failed,
+    setLevelProgress({ done: 0, total: topics.length, current: "Memulai..." });
+
+    let succeeded = 0;
+    let failed = 0;
+    const failures: string[] = [];
+
+    // Generate satu per satu dari browser agar progress terlihat & tidak "hang"
+    for (let i = 0; i < topics.length; i++) {
+      const item = topics[i];
+      setLevelProgress({ done: i, total: topics.length, current: `${item.topic} (${item.category})` });
+      try {
+        const res = await fetch("/api/admin/generate-lesson", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level: item.level,
+            category: item.category,
+            topic: item.topic,
+            isFree: Boolean(item.isFree),
+          }),
         });
-        setMessage({
-          type: data.failed === 0 ? "ok" : "err",
-          text: `${data.succeeded}/${data.total} pelajaran berhasil dibuat (draft). Periksa di Daftar Materi untuk menyetujui.`,
-        });
+        if (res.ok) {
+          succeeded++;
+        } else {
+          failed++;
+          failures.push(item.topic);
+        }
+      } catch {
+        failed++;
+        failures.push(item.topic);
       }
-    } catch {
-      setMessage({ type: "err", text: "Terjadi kesalahan jaringan." });
-    } finally {
-      setGeneratingLevel(false);
+      setLevelProgress({ done: i + 1, total: topics.length, current: "" });
     }
+
+    setLevelResult({ total: topics.length, succeeded, failed });
+    setLevelProgress(null);
+    setMessage({
+      type: failed === 0 ? "ok" : "err",
+      text:
+        failed === 0
+          ? `${succeeded}/${topics.length} pelajaran berhasil dibuat (draft). Periksa di Daftar Materi untuk menyetujui.`
+          : `${succeeded}/${topics.length} berhasil, ${failed} gagal: ${failures.slice(0, 5).join(", ")}`,
+    });
+    setGeneratingLevel(false);
   }
 
   async function generate() {
@@ -136,7 +156,8 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
           <select
             value={level}
             onChange={(e) => setLevel(e.target.value as CefrLevel)}
-            className="w-full max-w-xs rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand"
+            disabled={generatingLevel}
+            className="w-full max-w-xs rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand disabled:opacity-50"
           >
             {CEFR_LEVELS.map((l) => (
               <option key={l} value={l}>{l}</option>
@@ -148,10 +169,40 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
             disabled={generatingLevel}
             className="shrink-0 rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
           >
-            {generatingLevel ? "Membuat 20 pelajaran..." : `Generate Level ${level}`}
+            {generatingLevel ? "Membuat pelajaran..." : `Generate Level ${level}`}
           </button>
         </div>
-        {levelResult && (
+
+        {/* Progress bar */}
+        {levelProgress && (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-slate-700">
+                {levelProgress.done}/{levelProgress.total} dibuat
+              </span>
+              <span className="text-xs text-slate-400">
+                {Math.round((levelProgress.done / levelProgress.total) * 100)}%
+              </span>
+            </div>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface">
+              <div
+                className="h-2 rounded-full bg-brand transition-all"
+                style={{ width: `${(levelProgress.done / levelProgress.total) * 100}%` }}
+              />
+            </div>
+            {levelProgress.current && (
+              <p className="mt-2 text-sm text-slate-600">
+                Sedang membuat: {levelProgress.current}...
+              </p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">
+              Setiap pelajaran ±10–30 detik. Total {levelProgress.total} pelajaran bisa memakan beberapa menit.
+              Halaman ini akan berjalan terus — jangan ditutup.
+            </p>
+          </div>
+        )}
+
+        {levelResult && !levelProgress && (
           <p className="mt-3 text-sm text-slate-600">
             {levelResult.succeeded}/{levelResult.total} dibuat. {levelResult.failed} gagal.
           </p>
