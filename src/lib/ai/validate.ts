@@ -26,6 +26,23 @@ export interface PlacementDraft {
 const isNonEmpty = (s: unknown): s is string =>
   typeof s === "string" && s.trim().length > 0;
 
+function findDuplicateQuestions(
+  questions: unknown[],
+  problems: string[],
+  scope: string,
+): void {
+  const seen = new Set<string>();
+  for (const q of questions) {
+    if (typeof q === "object" && q !== null && isNonEmpty((q as QuizItem).question)) {
+      const key = (q as QuizItem).question.trim().toLowerCase();
+      if (seen.has(key)) {
+        problems.push(`${scope} ada soal duplikat: "${(q as QuizItem).question}"`);
+      }
+      seen.add(key);
+    }
+  }
+}
+
 function validateQuizItem(
   q: unknown,
   problems: string[],
@@ -94,6 +111,7 @@ export function validateLessonDraft(
     problems.push("Harus ada tepat 5 soal kuis.");
   } else {
     draft.quiz.forEach((q, i) => validateQuizItem(q, problems, i, "Kuis"));
+    findDuplicateQuestions(draft.quiz, problems, "Kuis");
   }
   return problems;
 }
@@ -113,17 +131,6 @@ export function validatePlacementQuestions(
     problems.push(`Harus tepat 12 soal (ditemukan ${draft.questions.length}).`);
   }
   draft.questions.forEach((q, i) => validateQuizItem(q, problems, i, "Placement"));
-
-  // Cek duplikat pertanyaan
-  const seen = new Set<string>();
-  for (const q of draft.questions) {
-    if (typeof q === "object" && q !== null && isNonEmpty((q as QuizItem).question)) {
-      const key = (q as QuizItem).question.trim().toLowerCase();
-      if (seen.has(key)) {
-        problems.push(`Ada soal duplikat: "${(q as QuizItem).question}"`);
-      }
-      seen.add(key);
-    }
-  }
+  findDuplicateQuestions(draft.questions, problems, "Placement");
   return problems;
 }

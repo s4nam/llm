@@ -123,6 +123,14 @@ function validateReading(content: { passages?: unknown }, problems: string[]): v
     );
     findDuplicateQuestions(pass.questions, problems, `Passage #${i + 1}`);
   });
+
+  const allReading: unknown[] = [];
+  for (const p of passages) {
+    if (typeof p === "object" && p !== null && Array.isArray((p as { questions?: unknown }).questions)) {
+      allReading.push(...(p as { questions: unknown[] }).questions);
+    }
+  }
+  findDuplicateQuestions(allReading, problems, "Reading (lintas passage)");
 }
 
 function validateListening(content: { scripts?: unknown }, problems: string[]): void {
@@ -150,6 +158,14 @@ function validateListening(content: { scripts?: unknown }, problems: string[]): 
     );
     findDuplicateQuestions(script.questions, problems, `Script #${i + 1}`);
   });
+
+  const allListening: unknown[] = [];
+  for (const s of scripts) {
+    if (typeof s === "object" && s !== null && Array.isArray((s as { questions?: unknown }).questions)) {
+      allListening.push(...(s as { questions: unknown[] }).questions);
+    }
+  }
+  findDuplicateQuestions(allListening, problems, "Listening (lintas script)");
 }
 
 function validateWriting(content: { task?: unknown }, problems: string[]): void {

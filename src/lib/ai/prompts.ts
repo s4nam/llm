@@ -77,7 +77,7 @@ OUTPUT FORMAT: Return ONLY valid JSON with this exact shape (no markdown, no cod
   "sections": [{ "heading": string, "body": string }],
   "quiz": [{ "question": string, "options": [string,string,string,string], "answerIndex": number, "explanation": string }]
 }
-The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. All explanations must be in Bahasa Indonesia for A1/A2 and in English for B1 and above.`;
+The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. All explanations must be in Bahasa Indonesia for A1/A2 and in English for B1 and above. Do NOT create duplicate questions — every question must be unique and different from the others in the quiz.`;
 }
 
 export function buildPlacementPrompt(): string {
