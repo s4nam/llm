@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { createSnapTransaction, isMidtransConfigured } from "@/lib/midtrans";
 import { formatRupiah } from "@/lib/brand";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 const ORDER_ID_PREFIX = "EM";
 
@@ -17,6 +19,10 @@ export async function POST(request: Request) {
     );
   }
 
+  // Rate limit: cegah spam buat transaksi
+  const limited = await rateLimit(`pay-create:${clientIp(request)}`, { limit: 20, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -28,7 +34,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const plan = body.plan as "monthly" | "yearly";
   const couponCode = String(body.couponCode ?? "").trim();
 
@@ -46,23 +57,30 @@ export async function POST(request: Request) {
 
   // Terapkan kupon jika ada
   if (couponCode) {
-    const { data: coupon } = await supabase
-      .from("coupons")
-      .select("*")
-      .eq("code", couponCode.toUpperCase())
-      .single();
+    const { data: couponRaw } = await supabase.rpc("get_coupon", {
+      p_code: couponCode,
+    });
+    const coupon = Array.isArray(couponRaw) ? couponRaw[0] : couponRaw;
     if (!coupon || !coupon.active || (coupon.expires_at && new Date(coupon.expires_at) < new Date())) {
       return NextResponse.json({ error: "Kupon tidak valid atau kedaluwarsa." }, { status: 400 });
     }
-    // Cek belum pernah dipakai user ini (kupon 1x per akun)
+    // Cek belum pernah dipakai akun ini (hanya pesanan yang benar-benar lunas)
     const { data: existing } = await supabase
       .from("payments")
       .select("id")
       .eq("user_id", user.id)
-      .eq("raw->coupon", couponCode.toUpperCase())
+      .eq("coupon_code", couponCode.toUpperCase())
+      .eq("status", "paid")
       .maybeSingle();
     if (existing) {
       return NextResponse.json({ error: "Kupon ini sudah pernah digunakan." }, { status: 400 });
+    }
+    // Cek kuota total pemakaian (max_uses) — hanya menghitung pesanan lunas
+    const { data: usage } = await supabase.rpc("get_coupon_usage", {
+      p_code: couponCode,
+    });
+    if ((usage ?? 0) >= coupon.max_uses) {
+      return NextResponse.json({ error: "Kuota pemakaian kupon sudah habis." }, { status: 400 });
     }
 
     if (coupon.discount_type === "percent") {
@@ -75,6 +93,11 @@ export async function POST(request: Request) {
     }
   }
 
+  // Jaga integritas: nominal harus wajar (mencegah diskon 100% → Rp 0)
+  if (amount <= 0) {
+    return NextResponse.json({ error: "Nominal tidak valid. Periksa diskon kupon." }, { status: 400 });
+  }
+
   const orderId = `${ORDER_ID_PREFIX}${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
   // Simpan order pending
@@ -84,6 +107,9 @@ export async function POST(request: Request) {
     amount,
     plan,
     status: "pending",
+    coupon_code: couponCode.toUpperCase() || null,
+    base_price: basePrice,
+    discount_amount: Math.max(0, basePrice - amount),
     raw: { coupon: couponCode.toUpperCase() || null, base_price: basePrice, discount: discountLabel },
   });
   if (insertError) {

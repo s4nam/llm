@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { checkTransactionStatus } from "@/lib/midtrans";
+import { sendPaymentInvoice } from "@/lib/payment-invoice";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -47,6 +48,22 @@ export async function GET(request: Request) {
     const isPaid = txn === "capture" || txn === "settlement";
 
     if (isPaid) {
+      // Integritas nominal: hanya aktifkan jika gross_amount persis sesuai.
+      const actual = Number(String(real.gross_amount ?? ""));
+      if (!actual || actual !== Number(payment.amount)) {
+        await supabase.rpc("mark_payment_mismatch", {
+          p_order_id: orderId,
+          p_expected: payment.amount,
+          p_actual: actual,
+          p_reason: "Nominal tidak sesuai saat rekonsiliasi status",
+        });
+        return NextResponse.json({
+          status: "mismatch",
+          amount: payment.amount,
+          plan: payment.plan,
+        });
+      }
+
       // Proses seperti webhook (via function yang sama)
       await supabase.rpc("mark_payment_paid", {
         p_order_id: orderId,
@@ -55,14 +72,21 @@ export async function GET(request: Request) {
         p_user_id: payment.user_id,
         p_raw: real,
       });
-      return NextResponse.json({ status: "paid" });
+      // Invoice (jalur webhook bisa terlewat) — hanya dikirim di transisi ini
+      await sendPaymentInvoice(supabase, {
+        user_id: payment.user_id,
+        midtrans_order_id: orderId,
+        amount: payment.amount,
+        plan: payment.plan,
+      });
+      return NextResponse.json({ status: "paid", amount: payment.amount, plan: payment.plan });
     }
     if (txn === "expire") {
       await supabase.rpc("mark_payment_expired", { p_order_id: orderId });
-      return NextResponse.json({ status: "expired" });
+      return NextResponse.json({ status: "expired", amount: payment.amount, plan: payment.plan });
     }
-    return NextResponse.json({ status: payment.status ?? txn });
+    return NextResponse.json({ status: payment.status ?? txn, amount: payment.amount, plan: payment.plan });
   } catch {
-    return NextResponse.json({ status: payment.status ?? "pending" });
+    return NextResponse.json({ status: payment.status ?? "pending", amount: payment.amount, plan: payment.plan });
   }
 }

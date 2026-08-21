@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Logo } from "@/components/logo";
 
 interface Question {
@@ -23,6 +24,7 @@ export default function PlacementPage() {
     score: number;
     total: number;
     recommendedLevel: string;
+    saved?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -187,12 +189,23 @@ export default function PlacementPage() {
               Ini hanya saran. Anda bisa memilih level mana pun secara manual
               kapan saja dari dashboard.
             </p>
+            {result.saved === false && (
+              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-700">
+                Hasil belum disimpan.{" "}
+                <Link href="/masuk" className="font-semibold text-brand underline">
+                  Masuk
+                </Link>{" "}
+                untuk menyimpan hasil ke dashboard Anda.
+              </p>
+            )}
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
+              onClick={() =>
+                router.push(result.saved === false ? "/masuk" : "/dashboard")
+              }
               className="mt-6 w-full rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
             >
-              Lanjut ke Dashboard
+              {result.saved === false ? "Masuk untuk Simpan Hasil" : "Lanjut ke Dashboard"}
             </button>
             <button
               type="button"

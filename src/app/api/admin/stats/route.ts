@@ -21,15 +21,17 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const [statsRes, revenueRes, popularRes] = await Promise.all([
+  const [statsRes, revenueRes, popularRes, businessRes] = await Promise.all([
     supabase.rpc("get_admin_stats"),
     supabase.rpc("get_revenue_daily"),
     supabase.rpc("get_popular_lessons", { p_limit: 10 }),
+    supabase.rpc("get_business_report"),
   ]);
 
   return NextResponse.json({
     stats: statsRes.data,
     revenue: Array.isArray(revenueRes.data) ? revenueRes.data : [],
     popular: Array.isArray(popularRes.data) ? popularRes.data : [],
+    business: businessRes.data,
   });
 }

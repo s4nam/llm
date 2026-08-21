@@ -2,21 +2,25 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { checkTransactionStatus } from "@/lib/midtrans";
+import { sendPaymentInvoice } from "@/lib/payment-invoice";
 import { sendTrialEnding, sendRenewalReminder } from "@/lib/email";
 
 /**
  * Cron job (dipanggil Vercel Cron tiap 6 jam).
  * Tugas:
- *  1. Nonaktifkan member yang expired.
- *  2. Cek ulang pembayaran pending (webhook gagal) → mark paid.
- *  3. Kirim email pengingat trial H-1.
- *  4. Kirim email perpanjangan member H-3 & H-1.
+ *  1. Bersihkan log: login_attempts (24 jam), lesson_opens (30 hari),
+ *     ai_usage_log (90 hari) — hemat storage.
+ *  2. Nonaktifkan member yang expired.
+ *  3. Cek ulang pembayaran pending (webhook gagal) → mark paid.
+ *  4. Kirim email pengingat trial H-1.
+ *  5. Kirim email perpanjangan member H-3 & H-1.
  * Keamanan: memerlukan header X-Cron-Secret yang cocok dengan env.
  */
 
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // jika belum diset, hanya jalankan saat ada header (untuk dev)
+  // Fail-closed: tanpa CRON_SECRET, endpoint tidak bisa dipanggil publik.
+  if (!secret) return false;
   return request.headers.get("x-cron-secret") === secret;
 }
 
@@ -41,6 +45,13 @@ export async function GET(request: Request) {
   };
 
   try {
+    // 0. Bersihkan log login lama (anti brute-force, hemat storage)
+    await supabase.rpc("purge_login_attempts");
+
+    // 0a. Bersihkan log akses pelajaran (30 hari) & pemakaian AI (90 hari)
+    await supabase.rpc("purge_lesson_opens", { p_days: 30 });
+    await supabase.rpc("purge_ai_usage_log", { p_days: 90 });
+
     // 1. Expire members
     await supabase.rpc("expire_members");
 
@@ -55,12 +66,30 @@ export async function GET(request: Request) {
       try {
         const real = await checkTransactionStatus(p.midtrans_order_id);
         if (real.transaction_status === "settlement" || real.transaction_status === "capture") {
+          // Integritas nominal: hanya aktifkan jika gross_amount persis sesuai
+          const actual = Number(String(real.gross_amount ?? ""));
+          if (!actual || actual !== Number(p.amount)) {
+            await supabase.rpc("mark_payment_mismatch", {
+              p_order_id: p.midtrans_order_id,
+              p_expected: p.amount,
+              p_actual: actual,
+              p_reason: "Nominal tidak sesuai saat pemulihan pending",
+            });
+            continue;
+          }
           await supabase.rpc("mark_payment_paid", {
             p_order_id: p.midtrans_order_id,
             p_amount: p.amount,
             p_plan: p.plan,
             p_user_id: p.user_id,
             p_raw: real,
+          });
+          // Invoice (jalur webhook bisa terlewat) — hanya dikirim di transisi ini
+          await sendPaymentInvoice(supabase, {
+            user_id: p.user_id,
+            midtrans_order_id: p.midtrans_order_id,
+            amount: p.amount,
+            plan: p.plan,
           });
           results.recovered++;
         } else if (real.transaction_status === "expire") {

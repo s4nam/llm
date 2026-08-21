@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
-export async function POST() {
+export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "Belum dikonfigurasi." }, { status: 500 });
   }
+
+  // Rate limit: cegah spam aktivasi trial
+  const limited = await rateLimit(`trial:${clientIp(request)}`, { limit: 5, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });

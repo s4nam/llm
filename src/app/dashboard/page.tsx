@@ -5,6 +5,7 @@ import Footer from "@/components/footer";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { CEFR_LEVELS } from "@/lib/types";
 import MergeProgressPrompt from "./merge-progress-prompt";
+import TimeGreeting from "./time-greeting";
 
 const LEVEL_NAMES: Record<string, string> = {
   A1: "Pemula",
@@ -103,7 +104,7 @@ export default async function DashboardPage() {
       <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
         <h1 className="text-3xl font-bold text-slate-900">
-          Assalamu&apos;alaikum, {name} 👋
+          <TimeGreeting name={name} />
         </h1>
         <p className="mt-2 text-slate-600">
           Lanjutkan belajar atau pilih level baru.
@@ -268,6 +269,12 @@ export default async function DashboardPage() {
             className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Pelajaran Gratis
+          </Link>
+          <Link
+            href="/academic"
+            className="rounded-xl bg-brand-light px-5 py-2.5 text-sm font-semibold text-brand transition hover:bg-brand/10"
+          >
+            🎓 Latihan Akademik
           </Link>
         </div>
       </main>

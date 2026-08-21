@@ -115,8 +115,12 @@ export async function sendInvoice(
   amount: number,
   plan: string,
   expiresAt: Date,
+  detailUrl?: string,
 ): Promise<void> {
   const planLabel = plan === "yearly" ? "Tahunan (365 hari)" : "Bulanan (30 hari)";
+  const detailButton = detailUrl
+    ? `<p><a href="${detailUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;display:inline-block">Lihat Detail Pesanan</a></p>`
+    : "";
   await send(
     email,
     `Invoice Pembayaran #${orderId} 🧾`,
@@ -130,6 +134,7 @@ export async function sendInvoice(
          <tr><td style="padding:6px 0;color:#64748b">Total</td><td style="text-align:right;font-weight:bold">Rp ${amount.toLocaleString("id-ID")}</td></tr>
          <tr><td style="padding:6px 0;color:#64748b">Aktif sampai</td><td style="text-align:right">${expiresAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td></tr>
        </table>
+       ${detailButton}
        <p>Selamat belajar! 🎉</p>`,
     ),
   );

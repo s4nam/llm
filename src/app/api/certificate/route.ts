@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { computeAccess } from "@/lib/access";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "Belum dikonfigurasi." }, { status: 500 });
   }
+
+  // Rate limit klaim sertifikat
+  const limited = await rateLimit(`certificate:${clientIp(request)}`, { limit: 20, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -17,7 +25,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
   }
 
-  const body = await request.json();
+  // Paywall: sertifikat hanya untuk member/trial aktif.
+  // Mencegah non-member mengklaim sertifikat dari subset pelajaran gratis.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_member, member_expires_at, trial_expires_at")
+    .eq("id", user.id)
+    .single();
+  if (!computeAccess(profile).hasAccess) {
+    return NextResponse.json(
+      { error: "Sertifikat tersedia untuk member. Silakan langganan." },
+      { status: 403 },
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const levelCode = String(body.levelCode ?? "").toUpperCase();
   if (!["A1", "A2", "B1", "B2", "C1", "C2"].includes(levelCode)) {
     return NextResponse.json({ error: "Level tidak valid." }, { status: 400 });

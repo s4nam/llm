@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const isProd = process.env.NODE_ENV === "production";
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -35,15 +37,26 @@ export async function proxy(request: NextRequest) {
             },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              sameSite: "lax",
+              secure: isProd,
+              path: "/",
+            }),
           );
         },
       },
     },
   );
 
-  // Refresh sesi jika ada / kedaluwarsa (agar pengguna tetap login)
-  await supabase.auth.getUser();
+  // Baca sesi dari cookie tanpa network call selama akses token masih valid
+  // (>90 detik dari kedaluwarsa). Jika sudah dekat kedaluwarsa, auth-js
+  // otomatis refresh via refresh_token (network call) & menulis cookie baru,
+  // sehingga pengguna tetap login.
+  // Sebelumnya getUser() dipanggil untuk semua request — termasuk pengunjung
+  // anonim tanpa sesi — sehingga 1 round-trip ke Supabase Auth per navigasi.
+  await supabase.auth.getSession();
 
   return response;
 }

@@ -32,10 +32,8 @@ export default async function LanggananPage() {
   const memberEndsAt = profile?.member_expires_at ? new Date(profile.member_expires_at) : null;
 
   // Kupon aktif
-  const { data: coupons } = await supabase
-    .from("coupons")
-    .select("code, discount_type, discount_value")
-    .eq("active", true);
+  const { data: couponsRaw } = await supabase.rpc("list_active_coupons");
+  const coupons = Array.isArray(couponsRaw) ? couponsRaw : [];
 
   return (
     <>

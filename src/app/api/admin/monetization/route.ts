@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -25,10 +27,8 @@ export async function GET(request: Request) {
   }
 
   if (action === "list-coupons") {
-    const { data: coupons } = await supabase
-      .from("coupons")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data: coupons, error } = await supabase.rpc("list_coupons_admin");
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ coupons });
   }
 
@@ -39,6 +39,10 @@ export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "unconfigured" }, { status: 500 });
   }
+
+  const limited = await rateLimit(`admin-monet:${clientIp(request)}`, { limit: 20, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "no client" }, { status: 500 });
@@ -54,7 +58,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const action = String(body.action ?? "");
 
   if (action === "save-pricing") {
@@ -80,15 +89,16 @@ export async function POST(request: Request) {
     const type = body.type === "nominal" ? "nominal" : "percent";
     const value = Number(body.value);
     const maxUses = Number(body.maxUses) || 1;
+    const expiresAt = body.expiresAt ? String(body.expiresAt) : null;
     if (!code || value <= 0) {
       return NextResponse.json({ error: "Kode atau nilai tidak valid." }, { status: 400 });
     }
-    const { error } = await supabase.from("coupons").insert({
-      code,
-      discount_type: type,
-      discount_value: value,
-      max_uses: maxUses,
-      active: true,
+    const { error } = await supabase.rpc("add_coupon", {
+      p_code: code,
+      p_type: type,
+      p_value: value,
+      p_max_uses: maxUses,
+      p_expires_at: expiresAt,
     });
     if (error) {
       if (error.code === "23505") {
@@ -96,6 +106,20 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "toggle-coupon") {
+    const code = String(body.code ?? "").toUpperCase().trim();
+    const active = Boolean(body.active);
+    if (!code) {
+      return NextResponse.json({ error: "Kode kupon diperlukan." }, { status: 400 });
+    }
+    const { error } = await supabase.rpc("set_coupon_active", {
+      p_code: code,
+      p_active: active,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
@@ -121,6 +145,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User tidak valid." }, { status: 400 });
     }
     const { error } = await supabase.rpc("admin_reset_trial", { p_user_id: userId });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "deactivate-member") {
+    const userId = String(body.userId ?? "");
+    if (!userId) {
+      return NextResponse.json({ error: "User tidak valid." }, { status: 400 });
+    }
+    const { error } = await supabase.rpc("admin_deactivate_member", {
+      p_user_id: userId,
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

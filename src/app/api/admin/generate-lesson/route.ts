@@ -4,19 +4,10 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildLessonPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
+import { validateLessonDraft, type LessonDraft } from "@/lib/ai/validate";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 import type { Category, CefrLevel } from "@/lib/types";
-
-interface LessonDraft {
-  topic: string;
-  intro: string;
-  sections: { heading: string; body: string }[];
-  quiz: {
-    question: string;
-    options: string[];
-    answerIndex: number;
-    explanation: string;
-  }[];
-}
 
 export async function POST(request: Request) {
   // Validasi admin
@@ -26,6 +17,11 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  // Rate limit ketat: mencegah biaya AI terbakar (10 generate/menit)
+  const limited = await rateLimit(`gen-lesson:${clientIp(request)}`, { limit: 10, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -44,7 +40,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tidak punya izin." }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const level = body.level as CefrLevel;
   const category = body.category as Category;
   const topic = String(body.topic ?? "").trim();
@@ -77,12 +78,10 @@ export async function POST(request: Request) {
 
     const draft = parseJson<LessonDraft>(result.content);
 
-    // Validasi struktur dasar
-    if (!Array.isArray(draft.sections) || draft.sections.length < 3) {
-      throw new Error("Struktur sections tidak valid dari AI.");
-    }
-    if (!Array.isArray(draft.quiz) || draft.quiz.length < 5) {
-      throw new Error("Struktur quiz tidak valid dari AI.");
+    // Validasi struktur lengkap (3 sections, 5 kuis dgn answerIndex 0-3, dsb)
+    const problems = validateLessonDraft(draft);
+    if (problems.length > 0) {
+      throw new Error(problems.slice(0, 5).join(" "));
     }
 
     // Simpan sebagai draft (belum publish — menunggu approval admin)

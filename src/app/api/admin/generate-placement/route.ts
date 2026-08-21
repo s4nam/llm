@@ -4,23 +4,21 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildPlacementPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
+import { validatePlacementQuestions, type PlacementDraft } from "@/lib/ai/validate";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
-interface PlacementDraft {
-  questions: {
-    question: string;
-    options: string[];
-    answerIndex: number;
-    explanation: string;
-  }[];
-}
-
-export async function POST() {
+export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json(
       { error: "Supabase belum dikonfigurasi." },
       { status: 500 },
     );
   }
+
+  // Rate limit: generate placement memakai AI
+  const limited = await rateLimit(`gen-placement:${clientIp(request)}`, { limit: 10, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -51,14 +49,14 @@ export async function POST() {
     );
 
     const draft = parseJson<PlacementDraft>(result.content);
-    if (!Array.isArray(draft.questions) || draft.questions.length < 12) {
-      throw new Error("Struktur placement test tidak valid dari AI.");
+    const problems = validatePlacementQuestions(draft);
+    if (problems.length > 0) {
+      throw new Error(problems.slice(0, 5).join(" "));
     }
 
-    const { error } = await supabase.from("placement_tests").upsert(
-      { id: 1, questions: draft.questions, generated_at: new Date().toISOString() },
-      { onConflict: "id" },
-    );
+    const { error } = await supabase.rpc("save_placement_questions", {
+      p_questions: draft.questions,
+    });
     if (error) throw error;
 
     await logAiUsage({ result, purpose: "placement" });

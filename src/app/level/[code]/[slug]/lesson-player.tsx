@@ -28,6 +28,9 @@ export default function LessonPlayer({
   const [writingText, setWritingText] = useState("");
   const [writingFeedback, setWritingFeedback] = useState<string | null>(null);
   const [writingScore, setWritingScore] = useState<number | null>(null);
+  const [writingRubric, setWritingRubric] = useState<
+    { criteria: string; score: number; comment: string }[] | null
+  >(null);
   const [writingQuota, setWritingQuota] = useState<{ used: number; limit: number } | null>(null);
   const [writingLoading, setWritingLoading] = useState(false);
   const audioRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -151,6 +154,7 @@ export default function LessonPlayer({
     if (writingText.trim().length < 5) return;
     setWritingLoading(true);
     setWritingFeedback(null);
+    setWritingRubric(null);
     const res = await fetch("/api/writing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -169,6 +173,7 @@ export default function LessonPlayer({
     }
     setWritingFeedback(data.feedback);
     setWritingScore(data.score);
+    if (Array.isArray(data.rubric)) setWritingRubric(data.rubric);
     setWritingQuota((q) => (q ? { ...q, used: q.used + 1 } : q));
   }
 
@@ -252,6 +257,26 @@ export default function LessonPlayer({
                     <p className="mb-2 text-lg font-bold text-brand">
                       Skor: {writingScore}/100
                     </p>
+                  )}
+                  {writingRubric && writingRubric.length > 0 && (
+                    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                      {writingRubric.map((r, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 last:border-0"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-slate-800">
+                              {r.criteria}
+                            </p>
+                            <p className="text-xs text-slate-500">{r.comment}</p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-brand-light px-2.5 py-0.5 text-sm font-bold text-brand">
+                            {r.score}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   <p className="whitespace-pre-line leading-7 text-slate-700">
                     {writingFeedback}

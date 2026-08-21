@@ -7,7 +7,12 @@ import crypto from "crypto";
  */
 
 function getKey(): Buffer {
-  const secret = process.env.SESSION_SECRET ?? "englishmudah-dev-secret";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      "SESSION_SECRET belum diatur. Isi di .env.local dengan string acak panjang (min. 32 karakter).",
+    );
+  }
   return crypto.createHash("sha256").update(secret).digest();
 }
 

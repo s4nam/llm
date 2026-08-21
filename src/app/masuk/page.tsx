@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { login } from "@/app/actions/login";
+import { changeEmailBeforeVerify } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [changeState, changeAction, changePending] = useActionState(
+    changeEmailBeforeVerify,
+    undefined,
+  );
+  const unverified = Boolean(
+    state?.message?.toLowerCase().includes("belum diverifikasi"),
+  );
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-12">
@@ -37,14 +47,24 @@ export default function LoginPage() {
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
               Kata Sandi
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="Kata sandi Anda"
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Kata sandi Anda"
+                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 pr-12 text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-600"
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -58,9 +78,99 @@ export default function LoginPage() {
           </div>
 
           {state?.message && (
-            <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">
-              {state.message}
-            </p>
+            <div className="rounded-lg bg-danger/10 p-3 text-sm text-danger">
+              <p>{state.message}</p>
+              {unverified && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowChangeEmail((v) => !v)}
+                    className="mt-2 font-semibold text-brand underline"
+                  >
+                    {showChangeEmail
+                      ? "Tutup"
+                      : "Yakin alamat email Anda benar? Ubah email"}
+                  </button>
+
+                  {showChangeEmail && (
+                    <form
+                      action={changeAction}
+                      className="mt-3 flex flex-col gap-2 border-t border-danger/20 pt-3"
+                    >
+                      <div>
+                        <label
+                          htmlFor="oldEmail"
+                          className="mb-1 block text-xs font-medium text-slate-700"
+                        >
+                          Email yang didaftarkan
+                        </label>
+                        <input
+                          id="oldEmail"
+                          name="oldEmail"
+                          type="email"
+                          required
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="newEmail"
+                          className="mb-1 block text-xs font-medium text-slate-700"
+                        >
+                          Email yang benar
+                        </label>
+                        <input
+                          id="newEmail"
+                          name="newEmail"
+                          type="email"
+                          required
+                          placeholder="kamu@email.com"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="changePwd"
+                          className="mb-1 block text-xs font-medium text-slate-700"
+                        >
+                          Kata sandi akun (untuk verifikasi kepemilikan)
+                        </label>
+                        <input
+                          id="changePwd"
+                          name="password"
+                          type="password"
+                          required
+                          placeholder="Kata sandi"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
+                        />
+                      </div>
+                      {changeState?.errors?.password && (
+                        <p className="text-sm text-danger">
+                          {changeState.errors.password.join(", ")}
+                        </p>
+                      )}
+                      {changeState?.errors?.email && (
+                        <p className="text-sm text-danger">
+                          {changeState.errors.email}
+                        </p>
+                      )}
+                      {changeState?.message && (
+                        <p className="text-sm text-success">
+                          {changeState.message}
+                        </p>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={changePending}
+                        className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                      >
+                        {changePending ? "Mengubah..." : "Ubah Email"}
+                      </button>
+                    </form>
+                  )}
+                </>
+              )}
+            </div>
           )}
 
           <button
@@ -107,5 +217,25 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+      <path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+      <line x1="2" x2="22" y1="2" y2="22" />
+    </svg>
   );
 }

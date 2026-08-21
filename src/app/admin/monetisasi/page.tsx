@@ -17,10 +17,7 @@ export default async function MonetisasiPage() {
   const { data: membersRaw } = await supabase.rpc("get_members_admin");
   const members = Array.isArray(membersRaw) ? membersRaw : [];
 
-  const { data: coupons } = await supabase
-    .from("coupons")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const { data: coupons } = await supabase.rpc("list_coupons_admin");
 
   return (
     <>

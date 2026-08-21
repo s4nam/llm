@@ -38,15 +38,40 @@ export default function Home() {
         {/* Hero */}
         <section className="bg-gradient-to-b from-brand-light/60 to-white">
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 px-4 py-20 text-center">
-            <span className="rounded-full bg-brand-light px-4 py-1 text-sm font-medium text-brand-dark">
-              Dari nol sampai lancar 🇬🇧
+            <span className="flex items-center gap-2 rounded-full bg-brand-light px-4 py-1 text-sm font-medium text-brand-dark">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 60 30"
+                className="h-3 w-6"
+              >
+                <clipPath id="gb-flag">
+                  <path d="M0,0 v30 h60 v-30 z" />
+                </clipPath>
+                <g clipPath="url(#gb-flag)">
+                  <path d="M0,0 v30 h60 v-30 z" fill="#012169" />
+                  <path
+                    d="M0,0 L60,30 M60,0 L0,30"
+                    stroke="#fff"
+                    strokeWidth="6"
+                  />
+                  <path
+                    d="M0,0 L60,30 M60,0 L0,30"
+                    stroke="#C8102E"
+                    strokeWidth="4"
+                  />
+                  <path d="M0,0 L0,30 M60,0 L60,30 M0,15 L60,15" stroke="#fff" strokeWidth="10" />
+                  <path d="M0,0 L0,30 M60,0 L60,30 M0,15 L60,15" stroke="#C8102E" strokeWidth="6" />
+                  <path d="M30,0 L30,30" stroke="#fff" strokeWidth="6" />
+                </g>
+              </svg>
+              Dari nol sampai lancar, Bahasa Inggris
             </span>
             <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               {BRAND.tagline}
             </h1>
             <p className="max-w-xl text-lg leading-8 text-slate-600">
               Kursus Bahasa Inggris online dengan materi bertahap sesuai
-              kemampuanmu. Coba gratis sekarang — tanpa kartu, tanpa ribet.
+              kemampuanmu. Coba gratis sekarang.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
@@ -57,7 +82,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/daftar"
-                className="rounded-xl border border-slate-300 bg-white px-8 py-4 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="group rounded-xl border border-slate-200 bg-white px-8 py-4 text-base font-semibold text-slate-700 shadow-sm transition hover:border-brand/40 hover:text-brand"
               >
                 Daftar Member
               </Link>
@@ -75,19 +100,33 @@ export default function Home() {
               Pilih levelmu, mulai belajar
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-center text-slate-600">
-              Level mengikuti standar internasional CEFR — dari pemula total
-              sampai setara penutur asli.
+              Diukur dengan standar internasional CEFR (A1–C2) — skala yang sama
+              dipakai Cambridge, IELTS, dan universitas di seluruh dunia.
+            </p>
+            <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-6 text-slate-500">
+              Dari pemula total sampai setara penutur asli. Tidak perlu menebak
+              level — kerjakan tes penempatan singkat, dan materinya disesuaikan
+              dengan kemampuanmu.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {levels.map((l) => (
-                <div
+                <Link
                   key={l.code}
-                  className="rounded-2xl border border-slate-200 p-4 text-center transition hover:border-brand"
+                  href={`/level/${l.code}`}
+                  className="rounded-2xl border border-slate-200 p-4 text-center transition hover:border-brand hover:shadow-sm"
                 >
                   <p className="text-2xl font-bold text-brand">{l.code}</p>
                   <p className="mt-1 text-sm text-slate-600">{l.label}</p>
-                </div>
+                </Link>
               ))}
+            </div>
+            <div className="mt-8 text-center">
+              <Link
+                href="/placement-test"
+                className="rounded-xl bg-brand px-8 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-brand-dark"
+              >
+                Ikuti Tes Penempatan
+              </Link>
             </div>
           </div>
         </section>

@@ -13,6 +13,9 @@ export default function AdminHeader() {
             <Link href="/admin/materi" className="hover:text-sky-300">
               Materi
             </Link>
+            <Link href="/admin/academic" className="hover:text-sky-300">
+              Latihan Akademik
+            </Link>
             <Link href="/admin/pengaturan-ai" className="hover:text-sky-300">
               Pengaturan AI
             </Link>
@@ -21,6 +24,9 @@ export default function AdminHeader() {
             </Link>
             <Link href="/admin/monetisasi" className="hover:text-sky-300">
               Monetisasi
+            </Link>
+            <Link href="/admin/kampanye" className="hover:text-sky-300">
+              Kampanye
             </Link>
             <Link href="/admin/laporan" className="hover:text-sky-300">
               Laporan
@@ -46,6 +52,9 @@ export default function AdminHeader() {
         <Link href="/admin/materi" className="shrink-0 text-sky-300">
           Materi
         </Link>
+        <Link href="/admin/academic" className="shrink-0 text-sky-300">
+          Latihan Akademik
+        </Link>
         <Link href="/admin/pengaturan-ai" className="shrink-0 text-sky-300">
           Pengaturan AI
         </Link>
@@ -54,6 +63,9 @@ export default function AdminHeader() {
         </Link>
         <Link href="/admin/monetisasi" className="shrink-0 text-sky-300">
           Monetisasi
+        </Link>
+        <Link href="/admin/kampanye" className="shrink-0 text-sky-300">
+          Kampanye
         </Link>
         <Link href="/admin/laporan" className="shrink-0 text-sky-300">
           Laporan

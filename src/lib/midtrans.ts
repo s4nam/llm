@@ -119,6 +119,7 @@ export async function checkTransactionStatus(
   transaction_status: string;
   fraud_status?: string;
   status_code: string;
+  gross_amount?: string | number;
 }> {
   const res = await fetch(`${getBaseUrl()}/transactions/${orderId}/status`, {
     method: "GET",

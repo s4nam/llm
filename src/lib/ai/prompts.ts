@@ -6,12 +6,12 @@ import type { Category, CefrLevel } from "@/lib/types";
  */
 
 const LEVEL_DESC: Record<CefrLevel, string> = {
-  A1: "beginner — knows almost nothing. Use very simple sentences, basic vocabulary, Indonesian translations.",
-  A2: "elementary — can use simple phrases for everyday life. Simple sentences, Indonesian translations.",
-  B1: "intermediate — can handle common situations. English-only, moderate sentences.",
-  B2: "upper-intermediate — can discuss opinions and abstract topics. English-only, natural English.",
-  C1: "advanced — formal and academic English. English-only, nuanced language.",
-  C2: "proficient — near-native. English-only, sophisticated language.",
+  A1: "beginner — understands & uses familiar everyday expressions and basic phrases; can introduce self; needs very simple sentences and Indonesian translations. Vocabulary strictly basic (greetings, numbers, family, food).",
+  A2: "elementary — can communicate simple routine tasks; short simple sentences about everyday life; Indonesian translations allowed. Vocabulary: simple everyday words only.",
+  B1: "intermediate — can handle common situations while travelling; can describe experiences and opinions simply; English-only, moderate sentences. Vocabulary: everyday + some abstract words.",
+  B2: "upper-intermediate — can discuss opinions and abstract topics fluently; can explain viewpoints; English-only, natural English. Vocabulary: wide range incl. abstract.",
+  C1: "advanced — can express ideas fluently and spontaneously; academic/formal language; English-only, nuanced. Vocabulary: academic, idiomatic, precise.",
+  C2: "proficient — near-native fluency; can understand everything heard/read; sophisticated, nuanced, register-flexible language. Vocabulary: specialist jargon, figurative, literary.",
 };
 
 export function buildLessonPrompt(params: {
@@ -65,6 +65,8 @@ ${categoryGuidelines[params.category]}
 
 Topic to teach: "${params.topic}"
 
+CRITICAL — CEFR LEVEL FIDELITY: All content MUST strictly match CEFR level ${params.level}. Do NOT use vocabulary, grammar, or reading complexity above or below this level. A ${params.level} student must be able to understand it comfortably, and an advanced student must not find it too easy.
+
 Language style: ${bilingual}
 Write in a warm, simple, encouraging tone for beginners.
 
@@ -75,7 +77,7 @@ OUTPUT FORMAT: Return ONLY valid JSON with this exact shape (no markdown, no cod
   "sections": [{ "heading": string, "body": string }],
   "quiz": [{ "question": string, "options": [string,string,string,string], "answerIndex": number, "explanation": string }]
 }
-The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items.`;
+The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. All explanations must be in Bahasa Indonesia for A1/A2 and in English for B1 and above.`;
 }
 
 export function buildPlacementPrompt(): string {
@@ -84,11 +86,14 @@ export function buildPlacementPrompt(): string {
 Create a placement test to determine a learner's CEFR level (A1 to C2).
 
 Requirements:
-- Exactly 12 multiple-choice questions, 4 options each.
-- Questions progress from very easy (A1) to advanced (C2).
+- EXACTLY 12 multiple-choice questions, 4 options each. Do not add or remove any.
+- Questions must progress strictly from easy (A1) to advanced (C2). Target CEFR level per question:
+  Q1-Q3 ≈ A1, Q4-Q5 ≈ A2, Q6-Q7 ≈ B1, Q8-Q9 ≈ B2, Q10 ≈ C1, Q11-Q12 ≈ C2.
+- Do NOT make early questions hard or late questions easy — the difficulty must climb.
 - Cover basic vocabulary, grammar, and reading comprehension.
 - Each question: {question, options[], answerIndex, explanation}.
-- Explanation in Bahasa Indonesia, brief.
+- answerIndex must be an integer 0-3. Explanations in Bahasa Indonesia, brief.
+- No duplicate questions.
 
 OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code fences):
 {
@@ -96,5 +101,5 @@ OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code fences):
     { "question": string, "options": [string,string,string,string], "answerIndex": number, "explanation": string }
   ]
 }
-The "questions" array must have exactly 12 items.`;
+The "questions" array must have EXACTLY 12 items.`;
 }

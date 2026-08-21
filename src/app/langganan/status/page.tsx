@@ -11,6 +11,7 @@ function PaymentStatusInner() {
   const [status, setStatus] = useState<"checking" | "paid" | "pending" | "expired">(
     () => (orderId ? "checking" : "expired"),
   );
+  const [amount, setAmount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(() =>
     orderId ? null : "Tidak ada order yang ditemukan.",
   );
@@ -23,8 +24,10 @@ function PaymentStatusInner() {
         const res = await fetch(`/api/payments/status?order_id=${encodeURIComponent(orderId)}`);
         const data = await res.json();
         if (cancelled) return;
+        if (typeof data.amount === "number") setAmount(data.amount);
         if (res.ok && data.status === "paid") setStatus("paid");
         else if (data.status === "expired") setStatus("expired");
+        else if (data.status === "mismatch") setStatus("pending");
         else setStatus("pending");
       } catch {
         if (!cancelled) setError("Gagal memeriksa status.");
@@ -53,7 +56,9 @@ function PaymentStatusInner() {
               Memeriksa pembayaran...
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Jika Anda sudah membayar, status akan diperbarui otomatis.
+              {amount
+                ? `Bayar tepat Rp ${amount.toLocaleString("id-ID")}.`
+                : "Jika Anda sudah membayar, status akan diperbarui otomatis."}
             </p>
           </>
         )}
@@ -83,9 +88,15 @@ function PaymentStatusInner() {
               Menunggu pembayaran
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              Silakan selesaikan pembayaran Anda. Halaman ini memeriksa
-              otomatis. Jika sudah membayar tapi belum berubah, tunggu
-              sebentar.
+              {amount ? (
+                <>
+                  Bayar tepat <b>Rp {amount.toLocaleString("id-ID")}</b>. Halaman
+                  ini memeriksa otomatis. Jika sudah membayar tapi belum berubah,
+                  tunggu sebentar.
+                </>
+              ) : (
+                "Silakan selesaikan pembayaran Anda. Halaman ini memeriksa otomatis."
+              )}
             </p>
             <Link
               href="/langganan"

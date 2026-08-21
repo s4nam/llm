@@ -4,9 +4,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import {
   verifyWebhookSignature,
   checkTransactionStatus,
-  refundTransaction,
 } from "@/lib/midtrans";
-import { sendInvoice } from "@/lib/email";
+import { sendPaymentInvoice } from "@/lib/payment-invoice";
 
 export async function POST(request: Request) {
   // Catat semua payload webhook untuk audit
@@ -77,66 +76,47 @@ export async function POST(request: Request) {
         transactionStatus === "settlement";
 
       if (shouldAccept) {
-        // Cek apakah order ini sudah pernah diproses (idempotensi)
-        const { data: existingPaid } = await supabase
-          .from("payments")
-          .select("id, status")
-          .eq("midtrans_order_id", orderId)
-          .single();
+        // INTEGRITAS NOMINAL (gaya e-commerce): hanya aktifkan member jika
+        // gross_amount yang dikonfirmasi Midtrans (dibawa dalam signature,
+        // tak bisa dipalsukan) PERSIS sama dengan nominal order.
+        // Kurang/lebih bayar → status 'mismatch', member TIDAK aktif, tanpa
+        // refund otomatis (admin yang memutuskan via Midtrans dashboard).
+        const actualAmount = Number(String(payload.gross_amount ?? ""));
+        const amountMismatch = !actualAmount || actualAmount !== Number(payment.amount);
 
-        const alreadyProcessed = existingPaid?.status === "paid";
-
-        if (!alreadyProcessed) {
-          await supabase.rpc("mark_payment_paid", {
+        if (amountMismatch) {
+          await supabase.rpc("mark_payment_mismatch", {
             p_order_id: orderId,
-            p_amount: payment.amount,
-            p_plan: payment.plan,
-            p_user_id: payment.user_id,
-            p_raw: payload,
-          });
-        }
-
-        // DETEKSI PEMBAYARAN GANDA:
-        // Jika user sudah member aktif DAN bayar lagi di waktu bersamaan,
-        // refund otomatis untuk transaksi ini (kecuali itu perpanjangan sah).
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_member, member_expires_at")
-          .eq("id", payment.user_id)
-          .single();
-
-        if (
-          profile?.is_member &&
-          profile.member_expires_at &&
-          new Date(profile.member_expires_at).getTime() > Date.now() + 24 * 60 * 60 * 1000
-        ) {
-          // Member masih aktif lebih dari 24 jam ke depan → kemungkinan pembayaran ganda
-          const refunded = await refundTransaction(orderId, payment.amount, "Pembayaran ganda");
-          await supabase
-            .from("payments")
-            .update({ status: refunded ? "refunded" : "paid" })
-            .eq("midtrans_order_id", orderId);
-          await supabase.from("membership_log").insert({
-            user_id: payment.user_id,
-            action: "refund",
-            detail: `Pembayaran ganda ${orderId} (refund ${refunded ? "otomatis" : "manual"})`,
+            p_expected: payment.amount,
+            p_actual: actualAmount,
+            p_reason: "Nominal tidak sesuai saat settlement",
           });
         } else {
-          // Kirim invoice
-          const { data: userData } = await supabase
-            .from("profiles")
-            .select("email, full_name")
-            .eq("id", payment.user_id)
+          // Cek apakah order ini sudah pernah diproses (idempotensi)
+          const { data: existingPaid } = await supabase
+            .from("payments")
+            .select("id, status")
+            .eq("midtrans_order_id", orderId)
             .single();
-          if (userData) {
-            await sendInvoice(
-              userData.email,
-              userData.full_name,
-              orderId,
-              payment.amount,
-              payment.plan,
-              new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            );
+
+          const alreadyProcessed = existingPaid?.status === "paid";
+
+          if (!alreadyProcessed) {
+            await supabase.rpc("mark_payment_paid", {
+              p_order_id: orderId,
+              p_amount: payment.amount,
+              p_plan: payment.plan,
+              p_user_id: payment.user_id,
+              p_raw: payload,
+            });
+
+            // Invoice hanya untuk transisi pending → paid (hindari dobel saat webhook ulang)
+            await sendPaymentInvoice(supabase, {
+              user_id: payment.user_id,
+              midtrans_order_id: orderId,
+              amount: payment.amount,
+              plan: payment.plan,
+            });
           }
         }
       } else if (fraudStatus === "challenge") {

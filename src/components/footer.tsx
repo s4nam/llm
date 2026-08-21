@@ -37,6 +37,10 @@ export default function Footer() {
         © {new Date().getFullYear()} englishmudah.id — Belajar English jadi
         mudah.
       </div>
+      <div className="mx-auto max-w-5xl px-4 pb-6 text-center text-xs leading-5 text-slate-400">
+        Konten modul Latihan Akademik dibuat otomatis oleh AI dan bukan materi
+        resmi ETS. englishmudah.id tidak berafiliasi dengan ETS.
+      </div>
     </footer>
   );
 }

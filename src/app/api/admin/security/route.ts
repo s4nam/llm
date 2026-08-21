@@ -8,6 +8,8 @@ import {
   totpProvisioningUri,
   generateRecoveryCodes,
 } from "@/lib/totp";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 async function requireAdmin() {
   if (!isSupabaseConfigured()) return null;
@@ -71,6 +73,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Rate limit: cegah brute-force kode verifikasi 2FA
+  const limited = await rateLimit(`admin-sec:${clientIp(request)}`, { limit: 20, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await requireAdmin();
   if (!supabase) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -80,7 +86,12 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   const userId = user!.id;
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const action = String(body.action ?? "");
 
   if (action === "setup") {

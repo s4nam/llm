@@ -41,6 +41,12 @@ export default async function Header() {
           >
             Coba Gratis
           </Link>
+          <Link
+            href="/academic"
+            className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
+          >
+            Latihan Akademik
+          </Link>
 
           {user ? (
             <>

@@ -100,6 +100,147 @@ Jalankan `supabase/migrations/003_learning_flow.sql` di **SQL Editor** Supabase 
 ### Menjalankan migration Fase 4
 Jalankan `supabase/migrations/004_monetization.sql` di **SQL Editor** Supabase (setelah 003). Ini membuat konfigurasi harga, riwayat membership, log webhook, dispute, dan RPC pembayaran (trial, set member, expire, admin).
 
+### Menjalankan migration Paywall (Fase 0)
+Jalankan `supabase/migrations/010_lesson_access.sql` di **SQL Editor** Supabase. Ini menutup celah paywall:
+- Helper `is_member_active()` (member aktif ATAU trial aktif).
+- Policy RLS `lessons` diperketat: published **hanya** untuk pelajaran `is_free` atau member/trial aktif → non-member tidak bisa membaca materi berbayar dari database.
+- RPC `get_lesson_meta(slug, level)` — meta saja tanpa konten, untuk menampilkan gate berjudul.
+
+### Menjalankan migration Keamanan (Fase 0a)
+Jalankan `supabase/migrations/012_security.sql` di **SQL Editor** Supabase. Ini menambah:
+- Tabel `login_attempts` + RPC `record_login_attempt` / `is_login_locked` (anti brute-force: 5× gagal → kunci 15 menit).
+- Perbaikan `change_email_unverified`: verifikasi kepemilikan lewat **password** (pgcrypto `crypt`) — menutup celah account takeover TETAPI tetap mengizinkan user yang salah ketik email memperbaiki emailnya (butuh `pgcrypto` extension, dibuat otomatis).
+- RPC `purge_login_attempts` (pembersihan log, dipanggil cron).
+
+### Menjalankan migration Modul Latihan Akademik (Fase 1)
+Jalankan `supabase/migrations/011_toefl_schema.sql` di **SQL Editor** Supabase. Ini menambah:
+- Tabel `toefl_sets` (konten latihan Reading/Listening/Writing/Speaking, status draft/published).
+- Tabel `toefl_results` (hasil latihan user) + `toefl_quota` (kuota AI per section **per bulan** — `period_start` = awal bulan).
+- RPC admin (generate/approve/update/delete/list) + RPC kuota + RPC meta set.
+- Bucket storage **`academic-audio`** (private) untuk rekaman speaking — akses hanya via signed URL, audio tidak pernah publik.
+
+> Catatan: jika `011` sudah pernah dijalankan sebelum versi kuota bulanan, cukup jalankan ulang file ini — RPC-nya memakai `create or replace`, sehingga versi terbaru menimpa yang lama.
+
+### Menjalankan migration Kupon (Fase 4)
+Jalankan `supabase/migrations/013_coupon_rpc.sql` di **SQL Editor** Supabase (setelah 012). Ini menambah RPC admin untuk kupon diskon:
+- `add_coupon(p_code, p_type, p_value, p_max_uses)` — buat kupon baru (cek `is_admin()`, RLS tidak melindungi `coupons` karena tabel hanya bisa dibaca via RPC).
+- `list_coupons_admin()` — daftar kupon terbaru dulu.
+- **Tanpa migration ini**, tombol "Buat" kupon di `/admin/monetisasi` gagal dengan pesan `Could not find the function public.add_coupon(...)`.
+
+### Menjalankan migration Pembersihan Data (Fase 0b)
+Jalankan `supabase/migrations/015_data_cleanup.sql` di **SQL Editor** Supabase (setelah 014). Ini menambah:
+- RPC `purge_lesson_opens(p_days)` — hapus log buka pelajaran lebih tua dari 30 hari (dipanggil cron, hemat storage).
+- RPC `purge_ai_usage_log(p_days)` — hapus log pemakaian AI lebih tua dari 90 hari (dipanggil cron, tetap bisa memantau pemakaian bulan berjalan).
+- Keduanya sudah dipanggil otomatis oleh `/api/cron` (tiap 6 jam). Data agregat (streak, progress, statistik) tidak terpengaruh.
+
+### Menjalankan migration Nonaktifkan Member (Fase 4b)
+Jalankan `supabase/migrations/016_deactivate_member.sql` di **SQL Editor** Supabase (setelah 015). Ini menambah:
+- RPC `admin_deactivate_member(p_user_id)` — tombol **Nonaktifkan** di Admin → Monetisasi → Kelola Member (membatalkan member yang ter-klik tak sengaja tanpa SQL manual; hanya admin, lewat cek `is_admin()`).
+
+### Menjalankan migration Kupon (Penyempurnaan)
+Jalankan `supabase/migrations/017_coupon_enhancement.sql` di **SQL Editor** Supabase (setelah 016). Ini memperbaiki pengelolaan kupon:
+- Kupon kini bisa diberi **tanggal kedaluwarsa** (kolom tanggal di form Admin → Monetisasi → Kupon).
+- Kupon bisa **dinonaktifkan/aktifkan kembali** (tombol di daftar kupon).
+- **`max_uses` diterapkan sungguhan** — dihitung dari pesanan berstatus lunas (`get_coupon_usage`), jadi kupon tidak bisa dipakai melebihi batas total.
+- Kolom `coupon_code` di `payments` menggantikan tracking lama di `raw` (yang ditimpa payload Midtrans saat bayar).
+- **Kupon lama yang tidak punya batas waktu otomatis diberi kadaluarsa = tanggal migration dijalankan** (langsung tidak valid). Kupon baru yang ingin tanpa batas cukup biarkan kolom kedaluwarsa kosong.
+
+### Menjalankan migration Laporan Kampanye (Fase 4c)
+Jalankan `supabase/migrations/018_campaign_report.sql` di **SQL Editor** Supabase (setelah 017). Ini menambah:
+- Kolom `deleted_at` di `coupons` (soft-delete) — kupon nonaktif bisa dihapus dari Admin → Monetisasi; kupon yang dihapus tetap muncul di laporan (riwayat tidak hilang).
+- Kolom `base_price` & `discount_amount` di `payments` — menyimpan nominal sebelum/diskonto yang tidak tertimpa payload Midtrans, sehingga laporan diskon akurat.
+- RPC `delete_coupon` (tolak jika masih aktif), `get_campaign_report` / `get_campaign_detail` (laporan kampanye), `get_coupon` / `list_active_coupons` (validasi & tampilan kupon — RLS `coupons` memblokir pembacaan langsung oleh user).
+- Halaman **Admin → Kampanye**: hasil kampanye per kupon (order lunas, pendapatan, diskon diberikan, jumlah user) + tombol Detail per kupon.
+
+### Menjalankan migration Integritas Pembayaran (Fase 4d)
+Jalankan `supabase/migrations/020_payment_integrity.sql` di **SQL Editor** Supabase (setelah 018). Prinsip gaya e-commerce:
+- Member **hanya diaktifkan jika nominal yang dikonfirmasi Midtrans (gross_amount) persis sama** dengan nominal order.
+- Kurang/lebih bayar → status `mismatch`, member **tidak aktif**, **tanpa refund otomatis** (admin yang putuskan di dashboard Midtrans). Ditandai juga di `membership_log`.
+- Logika auto-refund "pembayaran ganda" lama **dihapus**.
+
+### Menjalankan migration Laporan Bisnis (Fase 5a)
+Jalankan `supabase/migrations/021_business_report.sql` di **SQL Editor** Supabase (setelah 020). Ini menambah RPC `get_business_report()` yang mengisi Dashboard Admin dengan:
+- Uang masuk: hari ini / minggu / bulan / 30 hari / total; rincian paket bulanan vs tahunan; rata-rata transaksi.
+- Pendaftar hari ini / minggu / bulan + grafik 30 hari.
+- Member baru hari ini / minggu, trial baru hari ini, peringatan member kedaluwarsa 7 hari.
+- Semua angka "hari ini" memakai zona waktu **Asia/Jakarta**.
+
+## Checklist Aktivasi Paywall & Keamanan (Fase 0 & 0a)
+
+Setelah menjalankan migration di atas, lakukan langkah berikut agar fitur aktif penuh:
+
+1. **Jalankan migration di Supabase SQL Editor** (urutan):
+   - `supabase/migrations/010_lesson_access.sql` — paywall (RLS lessons diperketat).
+   - `supabase/migrations/011_toefl_schema.sql` — skema modul Latihan Akademik + bucket audio.
+   - `supabase/migrations/012_security.sql` — keamanan (anti brute-force + fix account takeover).
+   - `supabase/migrations/013_coupon_rpc.sql` — RPC kupon admin (wajib agar kupon bisa dibuat).
+   - `supabase/migrations/015_data_cleanup.sql` — pembersihan otomatis log lesson_opens & ai_usage_log (dipanggil cron).
+   - `supabase/migrations/016_deactivate_member.sql` — tombol Nonaktifkan member di Admin → Monetisasi.
+   - `supabase/migrations/017_coupon_enhancement.sql` — pengelolaan kupon (kedaluwarsa, nonaktif/aktif, max_uses diterapkan).
+   - `supabase/migrations/018_campaign_report.sql` — soft-delete kupon + laporan kampanye + RPC baca kupon.
+   - `supabase/migrations/020_payment_integrity.sql` — penjagaan nominal pembayaran (mismatch, tanpa refund otomatis).
+   - `supabase/migrations/021_business_report.sql` — laporan bisnis dashboard (uang masuk, pendaftar, member, churn).
+   - Pastikan migration sebelumnya 001–017 juga sudah dijalankan.
+
+2. **Isi `SESSION_SECRET` di `.env.local`** (wajib, min. 32 karakter acak):
+   - Dipakai untuk enkripsi API key AI & kunci 2FA.
+   - Jika kosong, aplikasi **gagal** saat menyimpan pengaturan AI / mengaktifkan 2FA (fail-fast).
+   - Ganti nilai lama `englishmudah-dev-secret` yang sudah tidak dipakai lagi.
+
+3. **(Opsional, disarankan) Rate limit penuh dengan Upstash**:
+   - Tanpa Upstash, aplikasi memakai fallback in-memory (cukup untuk pengembangan, tapi tidak bertahan antar-instance di produksi).
+   - Untuk produksi, buat project Upstash Redis gratis lalu isi `.env.local`:
+     ```
+     UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
+     UPSTASH_REDIS_REST_TOKEN=XXXXX
+     ```
+
+4. **`CRON_SECRET` wajib diisi di `.env.local`** (fail-closed):
+   - Endpoint `/api/cron` hanya bisa dipanggil dengan header `x-cron-secret` yang cocok.
+   - Jika kosong, cron tidak akan berjalan (403).
+
+5. **Uji anti brute-force**: coba login salah 6× berturut-turut → muncul pesan "Terlalu banyak percobaan" dan akun terkunci 15 menit.
+
+6. **Uji 2FA admin**:
+   - **Admin → Keamanan** → Aktifkan 2FA (pindai QR / masukkan secret di Google Authenticator).
+   - Setelah itu, **logout → login ulang** → password benar → otomatis diarahkan ke halaman verifikasi kode 6 digit → baru bisa masuk dashboard admin.
+   - **Login via Google** untuk akun admin dengan 2FA aktif juga diarahkan ke verifikasi kode (2FA diterapkan di semua jalur login).
+
+7. **Uji paywall**:
+   - Login sebagai user **bukan member** → buka pelajaran berbayar → hanya muncul judul + tombol "Langganan" (konten & kunci jawaban tidak terkirim ke browser).
+   - Buka halaman level → pelajaran berbayar tidak tampil untuk non-member.
+   - Member/trial → semua pelajaran terbuka normal.
+
+8. **Uji rate limit API**: minta berulang ke `/api/writing` atau `/api/placement` → setelah melewati batas muncul HTTP 429 "Terlalu banyak permintaan".
+
+## Panduan Modul Latihan Akademik (Fase 2)
+
+Modul **Latihan Akademik** (halaman `/academic`) adalah latihan tes bahasa Inggris akademik **bergaya TOEFL** — konten dibuat AI, **orisinal (bukan materi ETS)**, dan halaman memuat disclaimer "tidak berafiliasi dengan ETS".
+
+### Menjalankan migration
+Jalankan `supabase/migrations/011_toefl_schema.sql` di **SQL Editor** Supabase (jika belum):
+- Tabel `toefl_sets` (konten per section), `toefl_results` (hasil user), `toefl_quota` (kuota AI).
+- Bucket storage private `academic-audio` untuk rekaman speaking.
+
+### Membuat set latihan (admin)
+1. **Admin → Latihan Akademik** → pilih section (Reading/Listening/Writing/Speaking) → isi topik → **Generate Set (AI)**.
+2. Set muncul sebagai **draft** di **Admin → Latihan Akademik → Daftar Set (draft)**.
+3. Buka draft → **Pratinjau Konten** → **Setujui & Tampilkan** (atau Regenerate / Tolak).
+
+### Halaman siswa
+- **`/academic`** — landing publik (info + CTA + disclaimer), non-member melihat info lalu diminta langganan.
+- **`/academic/reading`** — bacaan akademik + soal (detail, inference, dll.) dengan timer & auto-submit.
+- **`/academic/listening`** — audio dulu → soal setelah (tanpa transkrip saat mengerjakan; transkrip muncul setelah submit).
+- **`/academic/writing`** — menulis esai (integrated & independent), dinilai AI dengan rubrik tetap 0–30; kuota 10/bulan per section.
+- **`/academic/speaking`** — rekam jawaban lisan (MediaRecorder, batas waktu per task), tersimpan di bucket private `academic-audio`, putar ulang via signed URL.
+- **`/academic/simulasi`** — simulasi 4 section (Reading, Listening, Writing dinilai AI, Speaking rekaman) dalam satu sesi dengan timer total; skor **0–120** + perkiraan level CEFR.
+- **`/academic/hasil`** — riwayat semua skor latihan & simulasi + pemetaan perkiraan level CEFR.
+- Skor dihitung **server-side** dan disimpan ke `toefl_results` (skor 0–30 per section, 0–120 simulasi).
+
+### Catatan konten & hak cipta
+- Prompt AI melarang menyalin materi ETS/buku berhak cipta; admin tetap menyetujui sebelum publikasi.
+- Gunakan nama "Latihan Akademik", bukan "TOEFL", di branding — TOEFL adalah merek dagang ETS.
+
 ## Panduan Monetisasi (Fase 4)
 
 ### Setup Midtrans
@@ -130,6 +271,8 @@ Jalankan `supabase/migrations/004_monetization.sql` di **SQL Editor** Supabase (
 
 ### Atur harga & kupon
 - Login admin → **Admin → Monetisasi** → set harga bulanan/tahunan, durasi trial, buat kupon (% / nominal), dan kelola member (perpanjang manual / reset trial).
+- **Durasi trial (jam)**: pengaturan ini **berlaku langsung** untuk trial baru (dihitung sejak aktivasi). Disarankan **168 jam (7 hari)** — 3 hari terlalu pendek untuk produk pembelajaran; praktik industri umumnya 7–14 hari.
+- **Tenggang trial**: kolom ini dihapus dari form (tidak dipakai logika apa pun). Standar industri saat trial habis = turun ke paket gratis (3 pelajaran + placement test tetap bisa dipakai) + email pengingat H-1, bukan akses lanjutan terpisah.
 
 ## Panduan Admin & Pantauan (Fase 5)
 

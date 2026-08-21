@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildLessonPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -12,6 +15,11 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  // Rate limit: regenerate memakai AI
+  const limited = await rateLimit(`lesson-actions:${clientIp(request)}`, { limit: 10, window: "60 s" });
+  if (limited) return limited;
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -28,7 +36,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tidak punya izin." }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const id = String(body.id ?? "");
   const action = String(body.action ?? ""); // 'approve' | 'reject' | 'regenerate'
 
@@ -52,6 +65,7 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    revalidateTag("lessons-public", "max");
     return NextResponse.json({ ok: true });
   }
 
@@ -60,6 +74,7 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    revalidateTag("lessons-public", "max");
     return NextResponse.json({ ok: true });
   }
 

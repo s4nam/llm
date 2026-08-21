@@ -23,7 +23,12 @@ function validate(
   if (!name || name.trim().length < 2) {
     errors.name = "Nama minimal 2 karakter.";
   }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (
+    !email ||
+    !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(
+      email,
+    )
+  ) {
     errors.email = "Masukkan email yang valid.";
   }
   const pwdIssues: string[] = [];
@@ -79,7 +84,7 @@ export async function signup(
     password,
     options: {
       data: { full_name: name },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/confirm`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
     },
   });
 
@@ -107,11 +112,79 @@ export async function resendVerification(email: string): Promise<{ message: stri
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/confirm`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
     },
   });
   if (error) {
     return { message: "Gagal mengirim ulang: " + error.message };
   }
   return { message: "Email verifikasi telah dikirim ulang. Cek folder inbox/spam Anda." };
+}
+
+const EMAIL_RE =
+  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+
+export async function changeEmailBeforeVerify(
+  prevState: SignupState,
+  formData: FormData,
+): Promise<SignupState> {
+  const oldEmail = String(formData.get("oldEmail") ?? "").trim();
+  const newEmail = String(formData.get("newEmail") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!EMAIL_RE.test(oldEmail) || !EMAIL_RE.test(newEmail)) {
+    return { errors: { email: "Masukkan alamat email yang valid." } };
+  }
+  if (!password) {
+    return { errors: { password: ["Masukkan kata sandi akun."] } };
+  }
+
+  const supabase = await createClient();
+  if (!supabase) {
+    return { message: "Layanan belum siap. Silakan coba lagi nanti." };
+  }
+
+  const { data, error } = await supabase.rpc("change_email_unverified", {
+    p_old_email: oldEmail,
+    p_new_email: newEmail,
+    p_password: password,
+  });
+
+  if (error) {
+    return { message: "Gagal mengubah email: " + error.message };
+  }
+
+  const result = String(data ?? "");
+  if (result === "OK") {
+    await resendVerification(newEmail);
+    return {
+      message: `Email berhasil diubah ke ${newEmail}. Email verifikasi telah dikirim ulang — cek folder inbox/spam Anda.`,
+    };
+  }
+  if (result === "WRONG_PASSWORD") {
+    return {
+      errors: {
+        password: ["Kata sandi tidak cocok dengan akun tersebut."],
+      },
+    };
+  }
+  if (result === "NOT_FOUND") {
+    return {
+      errors: { email: "Akun dengan email tersebut tidak ditemukan." },
+    };
+  }
+  if (result === "CONFIRMED") {
+    return {
+      errors: {
+        email:
+          "Akun dengan email tersebut sudah terverifikasi. Masuk dengan kata sandi Anda.",
+      },
+    };
+  }
+  if (result === "EMAIL_TAKEN") {
+    return {
+      errors: { email: "Alamat email tersebut sudah dipakai akun lain." },
+    };
+  }
+  return { message: "Gagal mengubah email. Silakan coba lagi." };
 }

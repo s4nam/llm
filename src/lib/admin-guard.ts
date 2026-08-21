@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { is2faPending } from "@/lib/security";
 
 /**
  * Verifikasi user adalah admin. Redirect ke /masuk jika belum login,
@@ -9,6 +10,12 @@ export async function requireAdmin() {
   if (!isSupabaseConfigured()) {
     redirect("/dashboard");
   }
+
+  // Jika admin baru login dan belum melewati verifikasi 2FA → arahkan ke 2FA
+  if (await is2faPending()) {
+    redirect("/masuk/2fa");
+  }
+
   const supabase = await createClient();
   if (!supabase) redirect("/masuk");
 

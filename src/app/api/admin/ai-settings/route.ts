@@ -4,10 +4,19 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { encryptKey } from "@/lib/ai/keys";
 import { callProvider } from "@/lib/ai/providers";
 import { getAiSettings } from "@/lib/ai";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 import type { ProviderId } from "@/lib/ai/cost";
 
-async function requireAdmin() {
+async function requireAdmin(request?: Request) {
   if (!isSupabaseConfigured()) return null;
+
+  // Rate limit test koneksi & simpan pengaturan (mencegah spam AI/API)
+  if (request) {
+    const limited = await rateLimit(`ai-settings:${clientIp(request)}`, { limit: 20, window: "60 s" });
+    if (limited) return null;
+  }
+
   const supabase = await createClient();
   if (!supabase) return null;
   const {
@@ -43,14 +52,19 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await requireAdmin();
+  const supabase = await requireAdmin(request);
   if (!supabase) {
     return NextResponse.json({ error: "Tidak punya izin." }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   // body.keys: { openai?: string, gemini?: string, claude?: string } — HANYA yang mau diubah
-  const keys: Record<string, string> = body.keys ?? {};
+  const keys: Record<string, string> = (body.keys as Record<string, string>) ?? {};
   const defaultProvider = body.defaultProvider as ProviderId;
   const defaultModel = String(body.defaultModel ?? "").trim();
   const budgetAlarmIdr = Number(body.budgetAlarmIdr ?? 0);
@@ -85,13 +99,18 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const supabase = await requireAdmin();
+  const supabase = await requireAdmin(request);
   if (!supabase) {
     return NextResponse.json({ error: "Tidak punya izin." }, { status: 403 });
   }
 
   // Test koneksi: body { provider, model }
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const provider = body.provider as ProviderId;
   const model = String(body.model ?? "").trim();
 

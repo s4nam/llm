@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { readJson } from "@/lib/http";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -8,6 +10,8 @@ export async function PATCH(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "Belum dikonfigurasi." }, { status: 500 });
   }
+  const limited = await rateLimit(`profile:${clientIp(request)}`, { limit: 30, window: "60 s" });
+  if (limited) return limited;
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -19,7 +23,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const name = String(body.name ?? "").trim();
   if (name.length < 2) {
     return NextResponse.json({ error: "Nama minimal 2 karakter." }, { status: 400 });
@@ -47,6 +56,8 @@ export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "Belum dikonfigurasi." }, { status: 500 });
   }
+  const limited = await rateLimit(`profile:${clientIp(request)}`, { limit: 30, window: "60 s" });
+  if (limited) return limited;
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Layanan belum siap." }, { status: 500 });
@@ -58,7 +69,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(request);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
   const action = String(body.action ?? "");
 
   if (action === "change-email") {
