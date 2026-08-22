@@ -192,7 +192,7 @@ export default function Simulation({
           {readingSet.passages.map((p, pIdx) => (
             <div key={pIdx} className="mt-5">
               <h4 className="font-semibold text-slate-800">{p.title}</h4>
-              <div className="mt-2 whitespace-pre-line rounded-xl bg-surface p-5 leading-7 text-slate-700">
+              <div className="mt-2 whitespace-pre-line rounded-xl bg-surface p-5 text-justify leading-7 text-slate-700">
                 {p.text}
               </div>
               <div className="mt-4 flex flex-col gap-4">
@@ -277,13 +277,13 @@ export default function Simulation({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Bahan bacaan
               </p>
-              <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">
+              <p className="mt-1 whitespace-pre-line text-justify text-sm leading-6 text-slate-700">
                 {writingSet.task.context}
               </p>
             </div>
           )}
           <div className="mt-4 rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-medium text-slate-800">{writingSet.task.prompt}</p>
+            <p className="text-justify text-sm font-medium text-slate-800">{writingSet.task.prompt}</p>
           </div>
           <textarea
             value={writingText}
@@ -320,7 +320,7 @@ export default function Simulation({
                     Persiapan {t.prepSeconds}s • Bicara {t.speakSeconds}s
                   </span>
                 </div>
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                <p className="mt-2 whitespace-pre-line text-justify text-sm leading-6 text-slate-700">
                   {t.prompt}
                 </p>
                 <div className="mt-3">
@@ -377,7 +377,7 @@ export default function Simulation({
             {result.writing.feedback && !result.writing.quotaError && (
               <div className="mt-4 rounded-xl bg-white p-4 text-left">
                 <p className="text-sm font-semibold text-slate-800">Umpan balik Writing</p>
-                <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">
+                <p className="mt-1 whitespace-pre-line text-justify text-sm leading-6 text-slate-600">
                   {result.writing.feedback}
                 </p>
               </div>
@@ -519,7 +519,7 @@ function ReviewList({
                   <p className="mt-1 text-sm text-slate-600">
                     Jawaban benar: {q.options?.[r.answerIndex]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">{r.explanation}</p>
+                  <p className="mt-1 text-justify text-sm text-slate-500">{r.explanation}</p>
                 </div>
               );
             })}

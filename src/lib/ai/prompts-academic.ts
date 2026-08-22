@@ -1,4 +1,5 @@
 import type { AcademicSection } from "@/lib/types-academic";
+import type { AiMessage } from "./providers";
 
 /**
  * Template prompt untuk modul "Latihan Akademik" (gaya TOEFL iBT).
@@ -161,4 +162,165 @@ export function promptForSection(
     default:
       return buildReadingPrompt({ topic });
   }
+}
+
+const SECTION_LABEL: Record<AcademicSection, string> = {
+  reading: "READING",
+  listening: "LISTENING",
+  writing: "WRITING",
+  speaking: "SPEAKING",
+};
+
+const SECTION_TARGET_DESC: Record<AcademicSection, string> = {
+  reading: "minimal 3 passage, masing-masing 400–700 kata dan tepat 5 soal",
+  listening: "minimal 2 script, masing-masing dengan tepat 5 soal",
+  writing: "objek task lengkap (prompt, context, rubric, timeMinutes)",
+  speaking: "tepat 4 tasks",
+};
+
+const SECTION_JSON_SHAPE: Record<AcademicSection, string> = {
+  reading: `{
+  "passages": [
+    { "title": string, "text": string,
+      "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] }
+  ]
+}`,
+  listening: `{
+  "scripts": [
+    { "title": string, "script": string,
+      "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] }
+  ]
+}`,
+  writing: `{
+  "task": { "taskType": "integrated" | "independent", "prompt": string, "context": string,
+    "rubric": [ { "name": string, "weight": number } ], "timeMinutes": number }
+}`,
+  speaking: `{
+  "tasks": [ { "prompt": string, "prepSeconds": number, "speakSeconds": number } ]
+}`,
+};
+
+const CONTINUATION_UNIT: Partial<Record<AcademicSection, string>> = {
+  reading: "passage",
+  listening: "script",
+};
+
+const CONTINUATION_SHAPE: Partial<Record<AcademicSection, string>> = {
+  reading: `[ { "title": string, "text": string,
+      "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] } ]`,
+  listening: `[ { "title": string, "script": string,
+      "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] } ]`,
+};
+
+/**
+ * Prompt perbaikan untuk output AI yang gagal validasi (terpotong / tidak lengkap).
+ * Jika bagian konten masih kurang (mis. reading cuma 2 passage), minta model
+ * menulis hanya sisanya dalam bentuk array JSON agar hemat token dan tidak
+ * terpotong lagi. Jika tidak, minta ulang seluruh JSON lengkap.
+ */
+export function buildAcademicRepairMessages(params: {
+  section: AcademicSection;
+  rawOutput: string;
+  existingCount: number;
+  targetCount: number;
+  problems: string[];
+}): AiMessage[] {
+  const { section, rawOutput, existingCount, targetCount, problems } = params;
+  const unit = CONTINUATION_UNIT[section];
+  const shape = CONTINUATION_SHAPE[section];
+
+  if (unit && existingCount >= 0 && existingCount < targetCount) {
+    const needed = targetCount - existingCount;
+    return [
+      {
+        role: "user",
+        content: `${ORIGINALITY_RULE}
+
+Output AI ${SECTION_LABEL[section]} di bawah terpotong dan baru memuat ${existingCount} dari ${targetCount} ${unit}.
+Tulis ${needed} ${unit} BARU yang masih kurang sehingga total menjadi ${targetCount}. JANGAN ulangi ${unit} yang sudah ada.
+
+${
+  section === "reading"
+    ? "Setiap passage baru: 400–700 kata, teks akademik orisinal, dan tepat 5 soal pilihan ganda (4 opsi)."
+    : "Setiap script baru: 2–4 menit saat dibacakan (teks akademik/percakapan orisinal) dan tepat 5 soal pilihan ganda (4 opsi)."
+}
+Tipe soal rotasi sesuai format ${SECTION_LABEL[section]} standar.
+Tiap soal: { question, options[4], answerIndex (0-3), explanation (Bahasa Indonesia), type }.
+
+OUTPUT FORMAT: Kembalikan HANYA array JSON (tanpa markdown, tanpa teks lain):
+${shape}
+
+OUTPUT AI SEBELUMNYA (referensi gaya & topik):
+${rawOutput.slice(0, 30000)}`,
+      },
+    ];
+  }
+
+  return [
+    {
+      role: "user",
+      content: `${ORIGINALITY_RULE}
+
+Output AI ${SECTION_LABEL[section]} sebelumnya TIDAK VALID. Perbaiki menjadi JSON LENGKAP yang valid.
+Target: ${SECTION_TARGET_DESC[section]}.
+
+Masalah yang ditemukan pada output sebelumnya:
+- ${problems.slice(0, 5).join("\n- ")}
+
+OUTPUT FORMAT: Kembalikan HANYA JSON valid (tanpa markdown, tanpa teks lain):
+${SECTION_JSON_SHAPE[section]}
+
+OUTPUT AI SEBELUMNYA (untuk referensi):
+${rawOutput.slice(0, 30000)}`,
+    },
+  ];
+}
+
+const READING_TYPES_TEXT =
+  "detail, vocabulary-in-context, inference, rhetorical purpose, sentence insertion, prose summary";
+const LISTENING_TYPES_TEXT =
+  "gist-content, gist-purpose, detail, speaker function, stance/attitude, organization, connecting content, inference";
+
+/**
+ * Prompt untuk generate SATU passage/script saja (dipakai untuk generate
+ * reading & listening secara bertahap). Dengan satu unit per panggilan,
+ * outputnya kecil sehingga tidak pernah terpotong oleh batas token model,
+ * dan jumlah unit selalu bisa dijamin.
+ */
+export function buildChunkPrompt(params: {
+  section: "reading" | "listening";
+  topic: string;
+  index: number;
+  total: number;
+  existingTitles: string[];
+}): string {
+  const isReading = params.section === "reading";
+  const distinct = params.existingTitles.length
+    ? `Pilih sub-topik yang BERBEDA dari yang sudah ada: ${params.existingTitles.join(", ")}.`
+    : "Pilih satu sub-topik yang spesifik.";
+  return `${baseInstruction()}
+
+TASK: ${isReading ? "READING" : "LISTENING"} practice set — bagian ${params.index} dari ${params.total}.
+Topik: "${params.topic}"
+
+${distinct}
+
+Tulis SATU ${isReading ? "passage akademik" : "script akademik"} yang orisinal:
+- ${
+    isReading
+      ? "400–700 kata, teks akademik (sains, sejarah, seni, ilmu sosial, dll.)."
+      : "2–4 menit saat dibacakan (kuliah singkat atau percakapan kampus)."
+  }
+- Ikuti dengan TEPAT 5 soal pilihan ganda (4 opsi).
+- Tipe soal (rotasi): ${isReading ? READING_TYPES_TEXT : LISTENING_TYPES_TEXT}.
+- Tiap soal: { question, options[4], answerIndex (0-3), explanation (Bahasa Indonesia), type }.
+
+OUTPUT FORMAT: Kembalikan HANYA objek JSON (tanpa markdown, tanpa teks lain):
+${
+  isReading
+    ? `{ "title": string, "text": string,
+    "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] }`
+    : `{ "title": string, "script": string,
+    "questions": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string, "type": string } ] }`
+}`;
 }

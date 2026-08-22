@@ -11,6 +11,7 @@ interface LessonDetail {
   intro: string;
   sections: { heading: string; body: string }[];
   quiz: { question: string; options: string[]; answerIndex: number; explanation: string }[];
+  games: unknown[];
   is_free: boolean;
   status: string;
 }
@@ -127,7 +128,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
       {/* Intro */}
       <div className="rounded-2xl border border-slate-200 bg-surface p-6">
         <h3 className="font-semibold text-slate-900">Intro</h3>
-        <p className="mt-2 leading-7 text-slate-700">{lesson.intro}</p>
+        <p className="mt-2 text-justify leading-7 text-slate-700">{lesson.intro}</p>
       </div>
 
       {/* Sections */}
@@ -151,7 +152,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
               )}
             </div>
           )}
-          <div className="mt-2 whitespace-pre-line leading-7 text-slate-700">{s.body}</div>
+          <div className="mt-2 whitespace-pre-line text-justify leading-7 text-slate-700">{s.body}</div>
         </div>
       ))}
 
@@ -179,10 +180,35 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-1.5 text-sm text-slate-500">💡 {q.explanation}</p>
+              <p className="mt-1.5 text-justify text-sm text-slate-500">💡 {q.explanation}</p>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Games */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="font-semibold text-slate-900">
+          Games Tambahan ({(lesson.games ?? []).length})
+        </h3>
+        {(lesson.games ?? []).length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">
+            Tidak ada latihan tambahan untuk pelajaran ini.
+          </p>
+        ) : (
+          <div className="mt-4 flex flex-col gap-5">
+            {(lesson.games as { type?: string }[]).map((g, gi) => (
+              <div key={gi} className="rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                  {g.type ?? "?"}
+                </p>
+                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 text-xs text-slate-700">
+                  {JSON.stringify(g, null, 2)}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

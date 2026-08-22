@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import { generateWithFallback, logAiUsage } from "@/lib/ai";
-import { promptForSection } from "@/lib/ai/prompts-academic";
-import { parseJson } from "@/lib/ai/parse";
-import { validateAcademicContent } from "@/lib/ai/validate-academic";
+import { generateAcademicSet } from "@/lib/ai/generate-academic";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { readJson } from "@/lib/http";
+import { debugLog } from "@/lib/debug-log";
 import type { AcademicSection } from "@/lib/types-academic";
 
 const SECTIONS: AcademicSection[] = ["reading", "listening", "writing", "speaking"];
@@ -59,24 +57,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await generateWithFallback(
-      [
-        {
-          role: "system",
-          content: "You produce structured JSON academic practice content. Output JSON only.",
-        },
-        { role: "user", content: promptForSection(section, topic) },
-      ],
-      { maxTokens: 3000 },
-    );
-
-    const content = parseJson<Record<string, unknown>>(result.content);
-
-    // Validasi struktur spesifik section
-    const problems = validateAcademicContent(section, content as never);
-    if (problems.length > 0) {
-      throw new Error(problems.slice(0, 5).join(" "));
-    }
+    debugLog("generate-start", section, topic);
+    // Generate bertahap (reading/listening) atau satu panggilan + repair
+    // (writing/speaking) — lihat lib/ai/generate-academic.ts.
+    const content = await generateAcademicSet(section, topic);
 
     const slugBase = `${section}-${topic
       .toLowerCase()
@@ -100,10 +84,10 @@ export async function POST(request: Request) {
       throw new Error(insertError?.message ?? "Gagal menyimpan set.");
     }
 
-    await logAiUsage({ result, purpose: "academic", lessonId: null });
-
+    debugLog("generate-ok", section, topic, String(setId));
     return NextResponse.json({ setId, slug });
   } catch (err) {
+    debugLog("generate-error", section, topic, (err as Error).message);
     return NextResponse.json(
       { error: (err as Error).message },
       { status: 500 },

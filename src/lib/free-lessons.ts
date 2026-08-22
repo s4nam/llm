@@ -69,6 +69,39 @@ export const FREE_LESSONS: FreeLesson[] = [
         explanation: "'Good evening' dipakai saat bertemu di malam hari.",
       },
     ],
+    games: [
+      {
+        type: "listen_choose",
+        items: [
+          {
+            text: "Good morning",
+            options: ["Selamat pagi", "Selamat malam", "Selamat tinggal", "Apa kabar"],
+            answerIndex: 0,
+            explanation: "'Good morning' berarti 'Selamat pagi'.",
+          },
+          {
+            text: "See you later",
+            options: ["Sampai jumpa lagi", "Selamat pagi", "Terima kasih", "Siapa namamu"],
+            answerIndex: 0,
+            explanation: "'See you later' berarti 'Sampai jumpa lagi'.",
+          },
+          {
+            text: "Nice to meet you",
+            options: ["Selamat datang", "Sampai jumpa", "Senang bertemu denganmu", "Selamat tidur"],
+            answerIndex: 2,
+            explanation: "'Nice to meet you' berarti 'Senang bertemu denganmu'.",
+          },
+        ],
+      },
+      {
+        type: "unscramble",
+        items: [
+          { sentence: "My name is Budi" },
+          { sentence: "Good morning everyone" },
+          { sentence: "I am from Indonesia" },
+        ],
+      },
+    ],
   },
   {
     id: "a1-grammar-be",

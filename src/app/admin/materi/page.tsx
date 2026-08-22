@@ -15,6 +15,18 @@ export default async function MateriPage() {
   const { data: raw } = await supabase.rpc("get_curriculum_admin");
   const rows = Array.isArray(raw) ? raw : [];
 
+  // Daftar topik yang sudah ada (draft & published) — untuk peringatan duplikat
+  // sebelum generate (lapis client).
+  const { data: lessonsRaw } = await supabase.rpc("list_lessons_admin");
+  const existingLessons = (Array.isArray(lessonsRaw) ? lessonsRaw : []).map(
+    (l: { level_code: string; category: string; title: string; status: string }) => ({
+      level: l.level_code,
+      category: l.category,
+      title: l.title,
+      status: l.status,
+    }),
+  );
+
   return (
     <>
       <AdminHeader />
@@ -33,7 +45,7 @@ export default async function MateriPage() {
             Daftar Materi (draft)
           </Link>
         </div>
-        <CurriculumManager rows={rows} />
+        <CurriculumManager rows={rows} existingLessons={existingLessons} />
       </main>
     </>
   );

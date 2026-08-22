@@ -12,11 +12,28 @@ export interface QuizItem {
   explanation: string;
 }
 
+export interface LessonGameLike {
+  type?: string;
+  items?: unknown[];
+  scenario?: string;
+  lines?: unknown[];
+  keyPhrases?: unknown[];
+  word?: string;
+  syllables?: unknown[];
+  stressedIndex?: number;
+  sentence?: string;
+  text?: string;
+  options?: unknown[];
+  answerIndex?: number;
+  explanation?: string;
+}
+
 export interface LessonDraft {
   topic: string;
   intro: string;
   sections: { heading: string; body: string }[];
   quiz: QuizItem[];
+  games?: LessonGameLike[];
 }
 
 export interface PlacementDraft {
@@ -112,6 +129,97 @@ export function validateLessonDraft(
   } else {
     draft.quiz.forEach((q, i) => validateQuizItem(q, problems, i, "Kuis"));
     findDuplicateQuestions(draft.quiz, problems, "Kuis");
+  }
+  return problems;
+}
+
+/**
+ * Validasi games — OPSIONAL. Mengembalikan daftar masalah jika struktur rusak,
+ * TETAPI caller bebas memutuskan apakah masalah ini memblokir penyimpanan.
+ * Untuk generate pelajaran: masalah games TIDAK menggagalkan (fallback []),
+ * agar satu kegagalan AI di games tidak merusak seluruh pelajaran.
+ */
+export function validateLessonGames(
+  games: unknown,
+): string[] {
+  const problems: string[] = [];
+  if (games == null) return problems;
+  if (!Array.isArray(games)) {
+    problems.push("games harus berupa array (atau kosong).");
+    return problems;
+  }
+
+  const TYPES = new Set(["listen_choose", "unscramble", "word_stress", "roleplay"]);
+  for (let i = 0; i < games.length; i++) {
+    const g = games[i] as LessonGameLike | null;
+    if (typeof g !== "object" || g === null || typeof g.type !== "string") {
+      problems.push(`game #${i + 1} harus punya 'type' string.`);
+      continue;
+    }
+    if (!TYPES.has(g.type)) {
+      problems.push(`game #${i + 1} type '${g.type}' tidak dikenal.`);
+      continue;
+    }
+
+    if (g.type === "listen_choose") {
+      const items = g.items;
+      if (!Array.isArray(items) || items.length < 1) {
+        problems.push(`game #${i + 1} (listen_choose) butuh minimal 1 item.`);
+      } else {
+        items.forEach((it, j) => {
+          const item = it as { text?: unknown; options?: unknown; answerIndex?: unknown; explanation?: unknown };
+          if (!isNonEmpty(item?.text)) problems.push(`listen_choose item #${j + 1} butuh 'text'.`);
+          if (!Array.isArray(item?.options) || item.options.length !== 4 || item.options.some((o) => !isNonEmpty(o))) {
+            problems.push(`listen_choose item #${j + 1} butuh tepat 4 pilihan.`);
+          }
+          if (typeof item?.answerIndex !== "number" || item.answerIndex < 0 || item.answerIndex > 3) {
+            problems.push(`listen_choose item #${j + 1} answerIndex harus 0-3.`);
+          }
+        });
+      }
+    } else if (g.type === "unscramble") {
+      const items = g.items;
+      if (!Array.isArray(items) || items.length < 1) {
+        problems.push(`game #${i + 1} (unscramble) butuh minimal 1 item.`);
+      } else {
+        items.forEach((it, j) => {
+          const item = it as { sentence?: unknown };
+          if (!isNonEmpty(item?.sentence)) problems.push(`unscramble item #${j + 1} butuh 'sentence'.`);
+        });
+      }
+    } else if (g.type === "word_stress") {
+      const items = g.items;
+      if (!Array.isArray(items) || items.length < 1) {
+        problems.push(`game #${i + 1} (word_stress) butuh minimal 1 item.`);
+      } else {
+        items.forEach((it, j) => {
+          const item = it as { word?: unknown; syllables?: unknown; stressedIndex?: unknown };
+          if (!isNonEmpty(item?.word)) problems.push(`word_stress item #${j + 1} butuh 'word'.`);
+          if (!Array.isArray(item?.syllables) || item.syllables.length < 2) {
+            problems.push(`word_stress item #${j + 1} butuh minimal 2 syllables.`);
+          }
+          if (typeof item?.stressedIndex !== "number") {
+            problems.push(`word_stress item #${j + 1} butuh 'stressedIndex'.`);
+          }
+        });
+      }
+    } else if (g.type === "roleplay") {
+      if (!isNonEmpty(g.scenario)) problems.push(`game #${i + 1} (roleplay) butuh 'scenario'.`);
+      if (!Array.isArray(g.lines) || g.lines.length < 2) {
+        problems.push(`game #${i + 1} (roleplay) butuh minimal 2 lines.`);
+      } else {
+        g.lines.forEach((ln, j) => {
+          const line = ln as { speaker?: unknown; text?: unknown };
+          if (line?.speaker !== "ai" && line?.speaker !== "user") {
+            problems.push(`roleplay line #${j + 1} speaker harus 'ai' atau 'user'.`);
+          }
+          if (!isNonEmpty(line?.text)) problems.push(`roleplay line #${j + 1} butuh 'text'.`);
+        });
+      }
+      if (!Array.isArray(g.keyPhrases) || g.keyPhrases.some((k) => !isNonEmpty(k))) {
+        problems.push(`game #${i + 1} (roleplay) butuh 'keyPhrases' (array string).`);
+      }
+    }
   }
   return problems;
 }

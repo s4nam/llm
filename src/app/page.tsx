@@ -100,6 +100,11 @@ export default function Home() {
               Pilih levelmu, mulai belajar
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-center text-slate-600">
+              <span className="inline-block rounded-full bg-brand-light px-3 py-0.5 text-xs font-semibold text-brand">
+                KURSUS UTAMA
+              </span>
+            </p>
+            <p className="mx-auto mt-3 max-w-lg text-center text-slate-600">
               Diukur dengan standar internasional CEFR (A1–C2) — skala yang sama
               dipakai Cambridge, IELTS, dan universitas di seluruh dunia.
             </p>

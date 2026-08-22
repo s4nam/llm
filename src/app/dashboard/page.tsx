@@ -6,6 +6,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { CEFR_LEVELS } from "@/lib/types";
 import MergeProgressPrompt from "./merge-progress-prompt";
 import TimeGreeting from "./time-greeting";
+import MemberMenu from "./member-menu";
 
 const LEVEL_NAMES: Record<string, string> = {
   A1: "Pemula",
@@ -52,14 +53,16 @@ export default async function DashboardPage() {
     user.email?.split("@")[0] ||
     "Sahabat EnglishMudah";
 
-  // Jumlah pelajaran publik per level
+  // Jumlah pelajaran publik per level + pemetaan id→level (untuk progress bar)
   const { data: published } = await supabase
     .from("lessons")
-    .select("level_code")
+    .select("id, level_code")
     .eq("status", "published");
   const counts: Record<string, number> = {};
+  const lessonLevel = new Map<string, string>();
   for (const row of published ?? []) {
     counts[row.level_code] = (counts[row.level_code] ?? 0) + 1;
+    if (row.id) lessonLevel.set(row.id, row.level_code);
   }
 
   // Progress user per level (count pelajaran yang completed)
@@ -70,6 +73,13 @@ export default async function DashboardPage() {
   const completedLessonIds = new Set(
     (progress ?? []).filter((p) => p.completed).map((p) => p.lesson_id),
   );
+
+  // Progress per level (untuk bar A1–C2)
+  const completedByLevel: Record<string, number> = {};
+  for (const lessonId of completedLessonIds) {
+    const lvl = lessonLevel.get(lessonId);
+    if (lvl) completedByLevel[lvl] = (completedByLevel[lvl] ?? 0) + 1;
+  }
 
   // Sertifikat user
   const { data: certificates } = await supabase
@@ -201,82 +211,81 @@ export default async function DashboardPage() {
         {/* Gabung progress browser */}
         <MergeProgressPrompt />
 
-        {/* Levels */}
-        <h2 className="mt-8 text-lg font-semibold text-slate-900">Pilih Level</h2>
+        {/* Kursus Utama (Level A1–C2) */}
+        <div className="mt-8 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Kursus Utama — Pilih Level
+            </h2>
+            <p className="text-sm text-slate-500">Level A1–C2 (CEFR)</p>
+          </div>
+        </div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CEFR_LEVELS.map((code) => {
             const count = counts[code] ?? 0;
             const ready = count > 0;
             const earned = earnedLevels.has(code);
+            const done = completedByLevel[code] ?? 0;
+            const pct = count > 0 ? Math.round((done / count) * 100) : 0;
             return (
               <div
                 key={code}
-                className={`flex items-center justify-between gap-3 rounded-2xl border p-5 ${
+                className={`flex flex-col gap-3 rounded-2xl border p-5 ${
                   ready
                     ? "border-slate-200 bg-white hover:border-brand"
                     : "border-dashed border-slate-200 bg-surface"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold ${
-                      ready
-                        ? "bg-brand-light text-brand"
-                        : "bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    {code}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {LEVEL_NAMES[code] ?? code}
-                      {earned && <span className="ml-1 text-success">🏅</span>}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {ready
-                        ? `${count} pelajaran tersedia`
-                        : "Segera hadir"}
-                    </p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold ${
+                        ready
+                          ? "bg-brand-light text-brand"
+                          : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {code}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {LEVEL_NAMES[code] ?? code}
+                        {earned && <span className="ml-1 text-success">🏅</span>}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {ready
+                          ? `${done}/${count} pelajaran selesai`
+                          : "Segera hadir"}
+                      </p>
+                    </div>
                   </div>
+                  {ready && (
+                    <Link
+                      href={`/level/${code}`}
+                      className="shrink-0 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Buka
+                    </Link>
+                  )}
                 </div>
-                {ready ? (
-                  <Link
-                    href={`/level/${code}`}
-                    className="shrink-0 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Buka
-                  </Link>
-                ) : (
-                  <span className="shrink-0 rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-400">
-                    Segera
-                  </span>
+                {ready && (
+                  <div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
+                      <div
+                        className="h-2 rounded-full bg-brand transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{pct}% selesai</p>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Profil link */}
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/profil"
-            className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Profil &amp; Sertifikat
-          </Link>
-          <Link
-            href="/pelajaran-gratis"
-            className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Pelajaran Gratis
-          </Link>
-          <Link
-            href="/academic"
-            className="rounded-xl bg-brand-light px-5 py-2.5 text-sm font-semibold text-brand transition hover:bg-brand/10"
-          >
-            🎓 Latihan Akademik
-          </Link>
-        </div>
+        {/* Menu member */}
+        <MemberMenu />
       </main>
       <Footer />
     </>

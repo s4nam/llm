@@ -39,3 +39,22 @@ export function estimateCostIdr(
     (completionTokens / 1_000_000) * m.outputPer1M;
   return usd * USD_TO_IDR;
 }
+
+/**
+ * Estimasi biaya TTS (per karakter). OpenAI gpt-4o-mini-tts ~ $15/1M karakter.
+ * Bisa disesuaikan bila model/penyedia TTS berubah.
+ */
+export function estimateTtsCostIdr(charCount: number): number {
+  const USD_PER_1M_CHARS = 15;
+  return (charCount / 1_000_000) * USD_PER_1M_CHARS * USD_TO_IDR;
+}
+
+/**
+ * Estimasi biaya STT (per menit audio). OpenAI gpt-4o-mini-transcribe
+ * ~ $0.003/menit — paling murah di antara model transkripsi OpenAI.
+ */
+export function estimateSttCostIdr(durationSeconds: number): number {
+  const USD_PER_MINUTE = 0.003;
+  const minutes = Math.max(0, durationSeconds) / 60;
+  return minutes * USD_PER_MINUTE * USD_TO_IDR;
+}

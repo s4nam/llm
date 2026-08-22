@@ -85,14 +85,14 @@ export default function WritingPractice({
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Bahan bacaan (Integrated)
           </p>
-          <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">
+          <p className="mt-1 whitespace-pre-line text-justify text-sm leading-6 text-slate-700">
             {task.context}
           </p>
         </div>
       )}
 
       <div className="mt-4 rounded-xl border border-slate-200 p-4">
-        <p className="text-sm font-medium text-slate-800">{task.prompt}</p>
+        <p className="text-justify text-sm font-medium text-slate-800">{task.prompt}</p>
       </div>
 
       {submitted && result ? (
@@ -137,7 +137,7 @@ export default function WritingPractice({
 
           <div className="mt-4 rounded-2xl bg-surface p-5">
             <h3 className="text-sm font-semibold text-slate-800">Umpan Balik</h3>
-            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-700">
+            <p className="mt-2 whitespace-pre-line text-justify text-sm leading-7 text-slate-700">
               {result.feedback}
             </p>
           </div>

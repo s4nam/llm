@@ -134,8 +134,29 @@ export async function sendInvoice(
          <tr><td style="padding:6px 0;color:#64748b">Total</td><td style="text-align:right;font-weight:bold">Rp ${amount.toLocaleString("id-ID")}</td></tr>
          <tr><td style="padding:6px 0;color:#64748b">Aktif sampai</td><td style="text-align:right">${expiresAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td></tr>
        </table>
-       ${detailButton}
-       <p>Selamat belajar! 🎉</p>`,
+${detailButton}
+        <p>Selamat belajar! 🎉</p>`,
+    ),
+  );
+}
+
+/** Email 5 — pengingat belajar harian (jaga streak). */
+export async function sendDailyReminder(
+  email: string,
+  name: string,
+  link: string,
+  streakDays?: number,
+): Promise<void> {
+  await send(
+    email,
+    "Jangan putus streak belajarmu 🔥",
+    baseLayout(
+      "Belajar 5 menit hari ini",
+      `<p>Halo ${name},</p>
+       <p>Hari ini kamu belum belajar di englishmudah. Luangkan 5 menit untuk
+       menjaga kebiasaan${streakDays ? ` — streakmu saat ini ${streakDays} hari` : ""}.</p>
+       <p><a href="${link}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;display:inline-block">Lanjut Belajar</a></p>
+       <p>Konsistensi kecil setiap hari = kemajuan besar.</p>`,
     ),
   );
 }

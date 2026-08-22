@@ -44,16 +44,18 @@ export async function login(
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  // Catat percobaan (best-effort)
-  try {
-    await supabase.rpc("record_login_attempt", {
-      p_email: email,
-      p_ip: ip,
-      p_success: !error,
-    });
-  } catch {
-    // abaikan — log tidak menghalangi login
-  }
+  // Catat percobaan (best-effort, NON-BLOCKING agar tidak menambah latensi)
+  void (async () => {
+    try {
+      await supabase.rpc("record_login_attempt", {
+        p_email: email,
+        p_ip: ip,
+        p_success: !error,
+      });
+    } catch {
+      // abaikan — log tidak menghalangi login
+    }
+  })();
 
   if (error) {
     const msg = String(error.message ?? "").toLowerCase();
@@ -80,11 +82,15 @@ export async function login(
   // 2FA: jika admin dengan TOTP aktif → redirect ke halaman verifikasi 2FA
   if (data.user) {
     try {
-      const { data: isAdmin } = await supabase.rpc("is_admin");
+      // Jalankan cek admin & keamanan SECARA PARALEL (hemat ~1 round-trip)
+      const [adminRes, secRes] = await Promise.allSettled([
+        supabase.rpc("is_admin"),
+        supabase.rpc("get_admin_security", { p_user_id: data.user.id }),
+      ]);
+      const isAdmin =
+        adminRes.status === "fulfilled" && Boolean(adminRes.value.data);
       if (isAdmin) {
-        const { data: sec } = await supabase.rpc("get_admin_security", {
-          p_user_id: data.user.id,
-        });
+        const sec = secRes.status === "fulfilled" ? secRes.value.data : null;
         const row = Array.isArray(sec) ? sec[0] : sec;
         if (row?.totp_enabled) {
           // Simpan flag sesi sementara → redirect ke verifikasi 2FA

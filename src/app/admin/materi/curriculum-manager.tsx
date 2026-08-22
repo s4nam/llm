@@ -14,9 +14,22 @@ export interface CurriculumRow {
   draft: number;
 }
 
+export interface ExistingLesson {
+  level: string;
+  category: string;
+  title: string;
+  status: string;
+}
+
 const TARGET_PER_CATEGORY = 4;
 
-export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
+export default function CurriculumManager({
+  rows,
+  existingLessons,
+}: {
+  rows: CurriculumRow[];
+  existingLessons: ExistingLesson[];
+}) {
   const router = useRouter();
   const [level, setLevel] = useState<CefrLevel>("A1");
   const [category, setCategory] = useState<Category>("vocabulary");
@@ -35,8 +48,66 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
     return map;
   }, [rows]);
 
+  // Topik yang tersedia di kurikulum untuk kombinasi level + kategori
+  const availableTopics = useMemo(
+    () =>
+      getCurriculumForLevel(level)
+        .filter((t) => t.category === category)
+        .map((t) => t.topic),
+    [level, category],
+  );
+
+  function changeLevel(next: CefrLevel) {
+    setLevel(next);
+    const ts = getCurriculumForLevel(next)
+      .filter((t) => t.category === category)
+      .map((t) => t.topic);
+    if (ts.length > 0) setTopic(ts[0]);
+  }
+
+  function changeCategory(next: Category) {
+    setCategory(next);
+    const ts = getCurriculumForLevel(level)
+      .filter((t) => t.category === next)
+      .map((t) => t.topic);
+    if (ts.length > 0) setTopic(ts[0]);
+  }
+
+  // Cek apakah topik sudah pernah dibuat untuk level + kategori tertentu
+  // (tidak peduli status draft/published). Digunakan untuk peringatan preventif.
+  function findDuplicate(lv: CefrLevel, cat: Category, topicTitle: string) {
+    return existingLessons.find(
+      (l) =>
+        l.level === lv &&
+        l.category === cat &&
+        l.title.toLowerCase() === topicTitle.trim().toLowerCase(),
+    );
+  }
+
+  function warnIfDuplicate(lv: CefrLevel, cat: Category, topicTitle: string): boolean {
+    const dup = findDuplicate(lv, cat, topicTitle);
+    if (!dup) return true;
+    const label = dup.status === "published" ? "sudah tampil" : "masih draft";
+    return window.confirm(
+      `⚠️ Peringatan: topik "${dup.title}" sudah ada di level ${lv} (${cat}) dan ${label}.\n\n` +
+        `Generate lagi akan menambah duplikat (bukan mengganti). Lanjutkan?`,
+    );
+  }
+
   async function generateLevel() {
     const topics = getCurriculumForLevel(level);
+    // Peringatan preventif: jika ada topik kurikulum yang sudah pernah dibuat,
+    // beri tahu admin sebelum men-generate seluruh level.
+    const existingDups = topics.filter((t) => findDuplicate(t.level, t.category, t.topic));
+    if (existingDups.length > 0) {
+      const ok = window.confirm(
+        `⚠️ ${existingDups.length} topik level ${level} sudah pernah dibuat:\n` +
+          existingDups.slice(0, 6).map((t) => `• ${t.topic} (${t.category})`).join("\n") +
+          (existingDups.length > 6 ? `\n… dan ${existingDups.length - 6} lainnya.` : "") +
+          `\n\nGenerate ulang akan membuat duplikat (bukan mengganti). Lanjutkan?`,
+      );
+      if (!ok) return;
+    }
     const confirmText = window.confirm(
       `Generate seluruh level ${level}?\n\n${topics.length} pelajaran akan dibuat (draft) satu per satu. Semua tetap harus disetujui dulu sebelum tampil.\n\nEstimasi biaya token: sekitar Rp 200 – 10.000 tergantung model & provider yang dipakai.\n\nLanjutkan?`,
     );
@@ -96,6 +167,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
       setMessage({ type: "err", text: "Isi topik pelajaran dulu (min. 3 karakter)." });
       return;
     }
+    if (!warnIfDuplicate(level, category, topic)) return;
     setGenerating(true);
     setMessage(null);
     try {
@@ -160,7 +232,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <select
             value={level}
-            onChange={(e) => setLevel(e.target.value as CefrLevel)}
+            onChange={(e) => changeLevel(e.target.value as CefrLevel)}
             disabled={generatingLevel}
             className="w-full max-w-xs rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand disabled:opacity-50"
           >
@@ -228,7 +300,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
             <label className="mb-1 block text-sm font-medium text-slate-700">Level</label>
             <select
               value={level}
-              onChange={(e) => setLevel(e.target.value as CefrLevel)}
+              onChange={(e) => changeLevel(e.target.value as CefrLevel)}
               className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand"
             >
               {CEFR_LEVELS.map((l) => (
@@ -240,7 +312,7 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
             <label className="mb-1 block text-sm font-medium text-slate-700">Kategori</label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value as Category)}
+              onChange={(e) => changeCategory(e.target.value as Category)}
               className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand"
             >
               {CATEGORIES.map((c) => (
@@ -254,9 +326,19 @@ export default function CurriculumManager({ rows }: { rows: CurriculumRow[] }) {
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
+              list="curriculum-topics"
               placeholder="Contoh: Daily Routines"
               className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
             />
+            <datalist id="curriculum-topics">
+              {availableTopics.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+            <p className="mt-1 text-xs text-slate-400">
+              Topik otomatis mengikuti kurikulum level {level}. Pilih dari daftar
+              atau ketik topik sendiri.
+            </p>
           </div>
         </div>
         <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">

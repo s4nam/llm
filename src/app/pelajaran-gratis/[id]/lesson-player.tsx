@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { FreeLesson } from "@/lib/types";
+import LessonGames from "@/components/lesson-games";
 
 const STORAGE_KEY = "em_free_progress";
 type Stored = Record<string, { completed: boolean; bestScore: number }>;
+
+/** Acak array (Fisher–Yates). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 function loadProgress(): Stored {
   if (typeof window === "undefined") return {};
@@ -34,6 +45,12 @@ export default function LessonPlayer({
   // Mulai kosong (server & client sama), lalu dimuat setelah mount.
   const [progress, setProgress] = useState<Stored>({});
   const [promptJoin, setPromptJoin] = useState(false);
+  // Urutan opsi per soal (index tampilan → index asli). Diacak setelah mount.
+  const [optionOrder, setOptionOrder] = useState<number[][]>([]);
+  // TTS: mulai true (server & client sama), lalu dideteksi setelah mount.
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const audioRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -44,13 +61,58 @@ export default function LessonPlayer({
     return () => clearTimeout(t);
   }, [lesson.id]);
 
+  // Deteksi TTS setelah mount (hindari hydration mismatch)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setTtsEnabled(
+        typeof window !== "undefined" && "speechSynthesis" in window,
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Acak urutan opsi kuis SETELAH mount (hindari hydration mismatch)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setOptionOrder(
+        lesson.quiz.map((q) => shuffle(q.options.map((_, i) => i))),
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, [lesson.quiz]);
+
+  const speak = useCallback(
+    (text: string, id?: string) => {
+      if (!ttsEnabled) return;
+      const key = id ?? text;
+      if (speakingId === key) {
+        window.speechSynthesis.cancel();
+        setSpeakingId(null);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = 0.9;
+      utter.onend = () => setSpeakingId(null);
+      utter.onerror = () => setSpeakingId(null);
+      audioRef.current = utter;
+      setSpeakingId(key);
+      window.speechSynthesis.speak(utter);
+    },
+    [ttsEnabled, speakingId],
+  );
+
   const answeredCount = answers.filter((a) => a !== null).length;
   const canSubmit = answeredCount === lesson.quiz.length;
 
-  function choose(index: number, qIndex: number) {
+  function choose(oIndex: number, qIndex: number) {
     if (submitted) return;
+    // oIndex = index TAMPILAN; petakan ke index ASLI sebelum disimpan.
+    const order = optionOrder[qIndex];
+    const realIndex = order ? order[oIndex] : oIndex;
     const next = [...answers];
-    next[qIndex] = index;
+    next[qIndex] = realIndex;
     setAnswers(next);
   }
 
@@ -87,7 +149,7 @@ export default function LessonPlayer({
     <div className="mt-6 flex flex-col gap-6">
       {/* Intro */}
       <div className="rounded-2xl border border-slate-200 bg-surface p-6">
-        <p className="leading-7 text-slate-700">{lesson.intro}</p>
+        <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
       </div>
 
       {/* Sections */}
@@ -96,7 +158,7 @@ export default function LessonPlayer({
           <h2 className="text-xl font-semibold text-slate-900">
             {section.heading}
           </h2>
-          <div className="mt-3 whitespace-pre-line leading-7 text-slate-700">
+          <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
             {section.body}
           </div>
         </section>
@@ -117,11 +179,14 @@ export default function LessonPlayer({
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {q.options.map((option, oIndex) => {
-                  const isSelected = answers[qIndex] === oIndex;
+                  // oIndex = index TAMPILAN; order = index asli dalam urutan tampilan.
+                  const order = optionOrder[qIndex];
+                  const realIndex = order ? order[oIndex] : oIndex;
+                  const isSelected = answers[qIndex] === realIndex;
                   const isCorrect =
-                    submitted && oIndex === q.answerIndex;
+                    submitted && realIndex === q.answerIndex;
                   const isWrong =
-                    submitted && isSelected && oIndex !== q.answerIndex;
+                    submitted && isSelected && realIndex !== q.answerIndex;
                   let cls =
                     "border-slate-200 bg-white hover:border-brand hover:bg-brand-light/40";
                   if (isCorrect) cls = "border-success bg-success/10";
@@ -129,7 +194,7 @@ export default function LessonPlayer({
                   else if (isSelected) cls = "border-brand bg-brand-light/40";
                   return (
                     <button
-                      key={oIndex}
+                      key={realIndex}
                       type="button"
                       onClick={() => choose(oIndex, qIndex)}
                       disabled={submitted}
@@ -142,7 +207,7 @@ export default function LessonPlayer({
               </div>
               {submitted && (
                 <p
-                  className={`mt-2 text-sm ${
+                  className={`mt-2 text-justify text-sm ${
                     answers[qIndex] === q.answerIndex
                       ? "text-success"
                       : "text-slate-600"
@@ -180,6 +245,9 @@ export default function LessonPlayer({
           </div>
         )}
       </section>
+
+      {/* Games (latihan tambahan per level CEFR) */}
+      <LessonGames games={lesson.games ?? []} speak={speak} ttsEnabled={ttsEnabled} />
 
       {/* Next / Join CTA */}
       {submitted && (

@@ -2,7 +2,11 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 
 const footerLinks = [
+  { label: "Kursus Utama", href: "/" },
   { label: "Coba Gratis", href: "/pelajaran-gratis" },
+  { label: "Latihan Akademik", href: "/academic" },
+  { label: "Percakapan Situasional", href: "/percakapan-situasional" },
+  { label: "Study Sets", href: "/study-sets" },
   { label: "Daftar", href: "/daftar" },
   { label: "FAQ", href: "/faq" },
   { label: "Kontak", href: "/kontak" },

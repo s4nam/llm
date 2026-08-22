@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { logout } from "@/app/actions/login";
 import { Logo } from "@/components/logo";
+import { computeAccess } from "@/lib/access";
+import HeaderNav from "@/components/header-nav";
 
 export default async function Header() {
   let user = null;
   let isAdmin = false;
+  let isMember = false;
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
@@ -21,6 +23,12 @@ export default async function Header() {
         } catch {
           isAdmin = false;
         }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_member, member_expires_at, trial_expires_at")
+          .eq("id", user.id)
+          .single();
+        isMember = computeAccess(profile).isMember;
       }
     }
   }
@@ -33,69 +41,37 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Logo />
-        <nav className="flex items-center gap-2 sm:gap-4">
-          <Link
-            href="/pelajaran-gratis"
-            className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
-          >
-            Coba Gratis
-          </Link>
-          <Link
-            href="/academic"
-            className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
-          >
-            Latihan Akademik
-          </Link>
-
-          {user ? (
-            <>
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-                >
-                  Admin
-                </Link>
-              )}
-              <Link
-                href="/dashboard"
-                className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
-              >
-                {name}
-              </Link>
-              <Link
-                href="/profil"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:hidden"
-              >
-                Profil
-              </Link>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Keluar
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/daftar"
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
-              >
-                Daftar
-              </Link>
-              <Link
-                href="/masuk"
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Masuk
-              </Link>
-            </>
-          )}
-        </nav>
+        <Logo href={user ? "/dashboard" : "/"} />
+        {user ? (
+          <HeaderNav name={name} isAdmin={isAdmin} isMember={isMember} />
+        ) : (
+          <nav className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/pelajaran-gratis"
+              className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
+            >
+              Coba Gratis
+            </Link>
+            <Link
+              href="/academic"
+              className="hidden text-sm font-medium text-slate-600 hover:text-slate-900 sm:block"
+            >
+              Latihan Akademik
+            </Link>
+            <Link
+              href="/daftar"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              Daftar
+            </Link>
+            <Link
+              href="/masuk"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Masuk
+            </Link>
+          </nav>
+        )}
       </div>
     </header>
   );

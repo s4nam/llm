@@ -52,7 +52,7 @@ export default function SpeakingPractice({
                 Persiapan {t.prepSeconds}s • Bicara {t.speakSeconds}s
               </span>
             </div>
-            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+            <p className="mt-2 whitespace-pre-line text-justify text-sm leading-6 text-slate-700">
               {t.prompt}
             </p>
 

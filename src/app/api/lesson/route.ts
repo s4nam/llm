@@ -138,6 +138,11 @@ export async function POST(request: Request) {
       // Bump streak juga saat selesai
       await supabase.rpc("bump_streak", { p_user_id: user.id });
 
+      // Buka achievement baru (best-effort — deterministik dari data, tanpa AI)
+      if (completed) {
+        await supabase.rpc("unlock_achievements", { p_user_id: user.id });
+      }
+
       return NextResponse.json({
         score: pct,
         completed,

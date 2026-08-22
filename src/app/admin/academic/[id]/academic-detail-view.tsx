@@ -105,7 +105,7 @@ function ReadingPreview({ content }: { content: Record<string, unknown> }) {
       {passages.map((p, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-surface p-4">
           <p className="font-semibold text-slate-800">{p.title ?? `Passage ${i + 1}`}</p>
-          <p className="mt-1 line-clamp-3 text-sm text-slate-600">{p.text}</p>
+          <p className="mt-1 text-justify line-clamp-3 text-sm text-slate-600">{p.text}</p>
           <p className="mt-2 text-xs text-slate-500">
             {p.questions?.length ?? 0} soal
           </p>
@@ -122,7 +122,7 @@ function ListeningPreview({ content }: { content: Record<string, unknown> }) {
       {scripts.map((s, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-surface p-4">
           <p className="font-semibold text-slate-800">{s.title ?? `Script ${i + 1}`}</p>
-          <p className="mt-1 line-clamp-3 text-sm text-slate-600">{s.script}</p>
+          <p className="mt-1 text-justify line-clamp-3 text-sm text-slate-600">{s.script}</p>
           <p className="mt-2 text-xs text-slate-500">{s.questions?.length ?? 0} soal</p>
         </div>
       ))}
@@ -136,7 +136,7 @@ function WritingPreview({ content }: { content: Record<string, unknown> }) {
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-4">
       <p className="text-sm font-semibold text-slate-800">Tugas menulis</p>
-      <p className="mt-1 text-sm text-slate-600">{task.prompt}</p>
+      <p className="mt-1 text-justify text-sm text-slate-600">{task.prompt}</p>
       <p className="mt-2 text-xs text-slate-500">Waktu: {task.timeMinutes ?? 30} menit</p>
     </div>
   );
@@ -149,7 +149,7 @@ function SpeakingPreview({ content }: { content: Record<string, unknown> }) {
       {tasks.map((t, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-surface p-4">
           <p className="text-sm font-semibold text-slate-800">Task {i + 1}</p>
-          <p className="mt-1 line-clamp-3 text-sm text-slate-600">{t.prompt}</p>
+          <p className="mt-1 text-justify line-clamp-3 text-sm text-slate-600">{t.prompt}</p>
           <p className="mt-2 text-xs text-slate-500">
             Persiapan {t.prepSeconds ?? 0}s • Bicara {t.speakSeconds ?? 0}s
           </p>

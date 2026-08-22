@@ -3,8 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { LessonDetail } from "@/lib/types";
+import LessonGames from "@/components/lesson-games";
+import SaveToStudySet from "@/components/save-to-study-set";
 
 const FREE_STORAGE_KEY = "em_free_progress";
+
+/** Acak array (Fisher–Yates). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export default function LessonPlayer({
   lesson,
@@ -18,6 +30,8 @@ export default function LessonPlayer({
   );
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+  // Urutan opsi per soal (index tampilan → index asli). Diacak setelah mount.
+  const [optionOrder, setOptionOrder] = useState<number[][]>([]);
   const [result, setResult] = useState<boolean[]>([]);
   const [saving, setSaving] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -45,6 +59,17 @@ export default function LessonPlayer({
     return () => clearTimeout(t);
   }, []);
 
+  // Acak urutan opsi kuis SETELAH mount (hindari hydration mismatch).
+  // answers tetap menyimpan index ASLI; hanya urutan tampilan yang diacak.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setOptionOrder(
+        lesson.quiz.map((q) => shuffle(q.options.map((_, i) => i))),
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, [lesson.quiz]);
+
   // Catat akses pelajaran + bump streak (hanya jika login)
   useEffect(() => {
     if (isMember) {
@@ -63,9 +88,10 @@ export default function LessonPlayer({
   }, [lesson.id, isMember, lesson.category]);
 
   const speak = useCallback(
-    (text: string, id: string) => {
+    (text: string, id?: string) => {
       if (!ttsEnabled) return;
-      if (speakingId === id) {
+      const key = id ?? text;
+      if (speakingId === key) {
         window.speechSynthesis.cancel();
         setSpeakingId(null);
         return;
@@ -77,7 +103,7 @@ export default function LessonPlayer({
       utter.onend = () => setSpeakingId(null);
       utter.onerror = () => setSpeakingId(null);
       audioRef.current = utter;
-      setSpeakingId(id);
+      setSpeakingId(key);
       window.speechSynthesis.speak(utter);
     },
     [ttsEnabled, speakingId],
@@ -88,8 +114,11 @@ export default function LessonPlayer({
 
   function choose(oIndex: number, qIndex: number) {
     if (submitted) return;
+    // oIndex = index TAMPILAN; petakan ke index ASLI sebelum disimpan.
+    const order = optionOrder[qIndex];
+    const realIndex = order ? order[oIndex] : oIndex;
     const next = [...answers];
-    next[qIndex] = oIndex;
+    next[qIndex] = realIndex;
     setAnswers(next);
   }
 
@@ -181,7 +210,7 @@ export default function LessonPlayer({
     <div className="mt-6 flex flex-col gap-6">
       {/* Intro */}
       <div className="rounded-2xl border border-slate-200 bg-surface p-6">
-        <p className="leading-7 text-slate-700">{lesson.intro}</p>
+        <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
       </div>
 
       {/* Sections */}
@@ -203,14 +232,17 @@ export default function LessonPlayer({
                   Perangkat Anda tidak mendukung suara. Baca transkrip di bawah ini.
                 </p>
               )}
-              <div className="whitespace-pre-line rounded-xl bg-surface p-4 leading-7 text-slate-700">
+              <div className="whitespace-pre-line rounded-xl bg-surface p-4 text-justify leading-7 text-slate-700">
                 {section.body}
               </div>
             </div>
           ) : (
-            <div className="mt-3 whitespace-pre-line leading-7 text-slate-700">
+            <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
               {lesson.category === "vocabulary" && section.heading.toLowerCase().includes("kosakata") ? (
-                <VocabularyList body={section.body} onSpeak={speak} speakingId={speakingId} />
+                <>
+                  <VocabularyList body={section.body} onSpeak={speak} speakingId={speakingId} />
+                  {isMember && <SaveToStudySet word={lesson.title} />}
+                </>
               ) : (
                 section.body
               )}
@@ -278,7 +310,7 @@ export default function LessonPlayer({
                       ))}
                     </div>
                   )}
-                  <p className="whitespace-pre-line leading-7 text-slate-700">
+                  <p className="whitespace-pre-line text-justify leading-7 text-slate-700">
                     {writingFeedback}
                   </p>
                 </div>
@@ -312,16 +344,19 @@ export default function LessonPlayer({
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {q.options.map((option, oIndex) => {
-                  const isSelected = answers[qIndex] === oIndex;
-                  const isCorrect = submitted && oIndex === q.answerIndex;
-                  const isWrong = submitted && isSelected && oIndex !== q.answerIndex;
+                  // oIndex = index TAMPILAN; order = index asli dalam urutan tampilan.
+                  const order = optionOrder[qIndex];
+                  const realIndex = order ? order[oIndex] : oIndex;
+                  const isSelected = answers[qIndex] === realIndex;
+                  const isCorrect = submitted && realIndex === q.answerIndex;
+                  const isWrong = submitted && isSelected && realIndex !== q.answerIndex;
                   let cls = "border-slate-200 bg-white hover:border-brand hover:bg-brand-light/40";
                   if (isCorrect) cls = "border-success bg-success/10";
                   else if (isWrong) cls = "border-danger bg-danger/10";
                   else if (isSelected) cls = "border-brand bg-brand-light/40";
                   return (
                     <button
-                      key={oIndex}
+                      key={realIndex}
                       type="button"
                       onClick={() => choose(oIndex, qIndex)}
                       disabled={submitted}
@@ -333,7 +368,7 @@ export default function LessonPlayer({
                 })}
               </div>
               {submitted && (
-                <p className={`mt-2 text-sm ${result[qIndex] ? "text-success" : "text-slate-600"}`}>
+                <p className={`mt-2 text-justify text-sm ${result[qIndex] ? "text-success" : "text-slate-600"}`}>
                   <span className="font-semibold">
                     {result[qIndex] ? "✓ Benar." : "✗ Kurang tepat."}
                   </span>{" "}
@@ -384,6 +419,9 @@ export default function LessonPlayer({
           </div>
         )}
       </section>
+
+      {/* Games (latihan tambahan per level CEFR) */}
+      <LessonGames games={lesson.games ?? []} speak={speak} ttsEnabled={ttsEnabled} />
 
       {/* Report issue */}
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">

@@ -140,7 +140,7 @@ export default function ListeningPractice({
                   <summary className="cursor-pointer text-sm font-medium text-brand">
                     Lihat transkrip
                   </summary>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                  <p className="mt-2 whitespace-pre-line text-justify text-sm leading-6 text-slate-600">
                     {s.script}
                   </p>
                 </details>
@@ -162,7 +162,7 @@ export default function ListeningPractice({
                       <p className="mt-1 text-sm text-slate-600">
                         Jawaban benar: {q.options[r.answerIndex]}
                       </p>
-                      <p className="mt-1 text-sm text-slate-500">{r.explanation}</p>
+                      <p className="mt-1 text-justify text-sm text-slate-500">{r.explanation}</p>
                     </div>
                   );
                 })}

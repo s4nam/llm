@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import { generateWithFallback, logAiUsage } from "@/lib/ai";
-import { promptForSection } from "@/lib/ai/prompts-academic";
-import { parseJson } from "@/lib/ai/parse";
-import { validateAcademicContent } from "@/lib/ai/validate-academic";
+import { generateAcademicSet } from "@/lib/ai/generate-academic";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { readJson } from "@/lib/http";
+import { debugLog } from "@/lib/debug-log";
 import type { AcademicSection } from "@/lib/types-academic";
 
 export async function POST(request: Request) {
@@ -73,29 +71,19 @@ export async function POST(request: Request) {
   if (action === "regenerate") {
     try {
       const section = setRow.section as AcademicSection;
-      const result = await generateWithFallback(
-        [
-          {
-            role: "system",
-            content: "You produce structured JSON academic practice content. Output JSON only.",
-          },
-          { role: "user", content: promptForSection(section, setRow.title) },
-        ],
-        { maxTokens: 3000 },
-      );
-      const content = parseJson<Record<string, unknown>>(result.content);
-      const problems = validateAcademicContent(section, content as never);
-      if (problems.length > 0) {
-        throw new Error(problems.slice(0, 5).join(" "));
-      }
+      debugLog("regenerate-start", section, String(setRow.title));
+      // Pakai generator yang sama dengan "generate" (bertahap untuk
+      // reading/listening) agar hasil selalu lengkap & valid.
+      const content = await generateAcademicSet(section, setRow.title);
       const { error } = await supabase.rpc("admin_update_toefl_set", {
         p_set_id: id,
         p_content: content,
       });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      await logAiUsage({ result, purpose: "academic", lessonId: null });
+      debugLog("regenerate-ok", section, id);
       return NextResponse.json({ ok: true });
     } catch (err) {
+      debugLog("regenerate-error", String(setRow.title), (err as Error).message);
       return NextResponse.json(
         { error: (err as Error).message },
         { status: 500 },

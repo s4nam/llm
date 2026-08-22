@@ -41,6 +41,8 @@ export interface FreeLesson {
     answerIndex: number;
     explanation: string;
   }[];
+  /** Latihan tambahan (opsional) — pola game per level CEFR */
+  games?: LessonGame[];
 }
 
 export interface LessonDetail {
@@ -58,6 +60,8 @@ export interface LessonDetail {
     explanation: string;
   }[];
   is_free: boolean;
+  /** Latihan tambahan (opsional) — pola game per level CEFR */
+  games?: LessonGame[];
 }
 
 export interface UserProgressRow {
@@ -66,6 +70,39 @@ export interface UserProgressRow {
   best_score: number;
   completed_at: string | null;
 }
+
+/**
+ * Latihan tambahan (games) per pelajaran — pola game type per level CEFR.
+ * Semua game bersifat opsional; kelulusan pelajaran tetap via kuis inti (≥60%).
+ */
+export type LessonGame =
+  | {
+      type: "listen_choose";
+      items: {
+        text: string;
+        options: string[];
+        answerIndex: number;
+        explanation: string;
+      }[];
+    }
+  | {
+      type: "unscramble";
+      items: { sentence: string }[];
+    }
+  | {
+      type: "word_stress";
+      items: {
+        word: string;
+        syllables: string[];
+        stressedIndex: number;
+      }[];
+    }
+  | {
+      type: "roleplay";
+      scenario: string;
+      lines: { speaker: "ai" | "user"; text: string }[];
+      keyPhrases: string[];
+    };
 
 export interface CertificateRow {
   id: string;

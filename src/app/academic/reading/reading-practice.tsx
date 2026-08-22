@@ -155,7 +155,7 @@ export default function ReadingPractice({
                     <p className="mt-1 text-sm text-slate-600">
                       Jawaban benar: {q.options[r.answerIndex]}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">{r.explanation}</p>
+                    <p className="mt-1 text-justify text-sm text-slate-500">{r.explanation}</p>
                   </div>
                 );
               }),
@@ -167,7 +167,7 @@ export default function ReadingPractice({
           {passages.map((p, pIdx) => (
             <div key={pIdx} className="mt-6">
               <h3 className="text-base font-semibold text-slate-800">{p.title}</h3>
-              <div className="mt-2 whitespace-pre-line rounded-xl bg-surface p-5 leading-7 text-slate-700">
+              <div className="mt-2 whitespace-pre-line rounded-xl bg-surface p-5 text-justify leading-7 text-slate-700">
                 {p.text}
               </div>
               <div className="mt-5 flex flex-col gap-5">

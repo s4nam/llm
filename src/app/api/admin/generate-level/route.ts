@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildLessonPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
-import { validateLessonDraft, type LessonDraft } from "@/lib/ai/validate";
+import { validateLessonDraft, validateLessonGames, type LessonDraft } from "@/lib/ai/validate";
 import { getCurriculumForLevel } from "@/lib/curriculum";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { readJson } from "@/lib/http";
@@ -66,13 +66,19 @@ export async function POST(request: Request) {
             }),
           },
         ],
-        { maxTokens: 2500 },
+        { maxTokens: 6000 },
       );
 
       const draft = parseJson<LessonDraft>(result.content);
       const problems = validateLessonDraft(draft);
       if (problems.length > 0) {
         throw new Error(problems.slice(0, 5).join(" "));
+      }
+
+      const games = Array.isArray(draft.games) && draft.games.length > 0 ? draft.games : [];
+      const gamesProblems = validateLessonGames(games);
+      if (gamesProblems.length > 0) {
+        throw new Error(`Games tidak valid: ${gamesProblems.slice(0, 3).join(" | ")}`);
       }
 
       const slugBase = `${item.level}-${item.category}-${item.topic
@@ -93,6 +99,7 @@ export async function POST(request: Request) {
           p_intro: draft.intro,
           p_sections: draft.sections,
           p_quiz: draft.quiz,
+          p_games: games,
           p_is_free: Boolean(item.isFree),
         },
       );

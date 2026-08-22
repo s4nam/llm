@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { checkTransactionStatus } from "@/lib/midtrans";
 import { sendPaymentInvoice } from "@/lib/payment-invoice";
-import { sendTrialEnding, sendRenewalReminder } from "@/lib/email";
+import { sendTrialEnding, sendRenewalReminder, sendDailyReminder } from "@/lib/email";
 
 /**
  * Cron job (dipanggil Vercel Cron tiap 6 jam).
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     recovered: 0,
     trialEmails: 0,
     renewEmails: 0,
+    reminders: 0,
   };
 
   try {
@@ -132,6 +133,30 @@ export async function GET(request: Request) {
         const link = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/langganan`;
         await sendRenewalReminder(m.email, m.full_name, new Date(expire), link);
         results.renewEmails++;
+      }
+    }
+
+    // 5. Daily reminder — user aktif 7 hari yg belum belajar hari ini.
+    // Pakai RPC security definer (cron bukan admin; RLS blokir query langsung).
+    const { data: remindUsers } = await supabase.rpc("get_users_for_reminder");
+    const appLink = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    for (const u of remindUsers ?? []) {
+      try {
+        const { data: streakRow } = await supabase
+          .from("user_streaks")
+          .select("current_streak")
+          .eq("user_id", u.id)
+          .maybeSingle();
+        await sendDailyReminder(
+          u.email,
+          u.full_name,
+          `${appLink}/dashboard`,
+          streakRow?.current_streak ?? 0,
+        );
+        await supabase.rpc("mark_reminded", { p_user_id: u.id });
+        results.reminders++;
+      } catch {
+        // abaikan per-user; lanjut ke berikutnya
       }
     }
 

@@ -58,6 +58,9 @@ Lesson structure:
       ? "Use Indonesian translations in vocabulary and explanations (bilingual for beginners)."
       : "Use English only (no Indonesian translations).";
 
+  // Tipe game sesuai level CEFR (opsional — boleh kosong).
+  const gamesInstruction = buildGamesInstruction(params.level, params.category);
+
   return `You are an expert English course content creator for an online learning app in Indonesia.
 
 Level: ${params.level} (${LEVEL_DESC[params.level]})
@@ -70,14 +73,60 @@ CRITICAL — CEFR LEVEL FIDELITY: All content MUST strictly match CEFR level ${p
 Language style: ${bilingual}
 Write in a warm, simple, encouraging tone for beginners.
 
+${gamesInstruction}
+
 OUTPUT FORMAT: Return ONLY valid JSON with this exact shape (no markdown, no code fences):
 {
   "topic": string,
   "intro": string,
   "sections": [{ "heading": string, "body": string }],
-  "quiz": [{ "question": string, "options": [string,string,string,string], "answerIndex": number, "explanation": string }]
+  "quiz": [{ "question": string, "options": [string,string,string,string], "answerIndex": number, "explanation": string }],
+  "games": [ ... ]
 }
-The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. All explanations must be in Bahasa Indonesia for A1/A2 and in English for B1 and above. Do NOT create duplicate questions — every question must be unique and different from the others in the quiz.`;
+The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. All explanations must be in Bahasa Indonesia for A1/A2 and in English for B1 and above. Do NOT create duplicate questions — every question must be unique and different from the others in the quiz.
+The "games" array is OPTIONAL — if the level does not require games for this category, return an EMPTY array []. If you include games, follow the exact structures described above.`;
+}
+
+/**
+ * Instruksi generate games sesuai level CEFR (opsional).
+ * Mengadopsi pola game type per level (mekanisme umum, konten orisinal).
+ */
+function buildGamesInstruction(
+  level: CefrLevel,
+  category: Category,
+): string {
+  const parts: string[] = [];
+
+  // Listening game — hanya A1–A2
+  if (level === "A1" || level === "A2") {
+    parts.push(`LISTENING GAME (opsional, sarankan untuk level ${level}):
+Add a "listen_choose" game with exactly 3 items. Each item: { "text": a short English word or phrase, "options": [4 strings], "answerIndex": int 0-3, "explanation": string }. The "text" will be read aloud by text-to-speech; options are the possible answers (one correct). Use words/phrases from this lesson's topic.`);
+  }
+
+  // Unscramble sentence — A1–B1
+  if (level === "A1" || level === "A2" || level === "B1") {
+    parts.push(`UNSCRAMBLE SENTENCE GAME (opsional, sarankan untuk level ${level}):
+Add an "unscramble" game with exactly 3 items. Each item: { "sentence": a correct English sentence (5-9 words) from this lesson's grammar/vocabulary }. The app will scramble the words for the student to reorder.`);
+  }
+
+  // Word stress — A2 ke atas
+  if (level === "A2" || level === "B1" || level === "B2" || level === "C1" || level === "C2") {
+    parts.push(`WORD STRESS GAME (opsional, sarankan untuk level ${level}):
+Add a "word_stress" game with exactly 3 items. Each item: { "word": an English word with 2+ syllables relevant to this lesson, "syllables": [array of syllable strings e.g. ["ba","NA","na"]], "stressedIndex": int index of the stressed syllable }. The student taps which syllable is stressed.`);
+  }
+
+  // Role-play dialogue — A2 ke atas
+  if (level === "A2" || level === "B1" || level === "B2" || level === "C1" || level === "C2") {
+    parts.push(`ROLE-PLAY DIALOGUE GAME (opsional, sarankan untuk level ${level}):
+Add a "roleplay" game: { "scenario": short description in Bahasa Indonesia, "lines": [array of { "speaker": "ai" | "user", "text": string }] — a natural 4-6 line dialogue where "ai" lines are read aloud and "user" lines are read by the student, "keyPhrases": [array of 3-4 useful English phrases from the dialogue] }.`);
+  }
+
+  if (parts.length === 0) {
+    return "GAMES: Not required for this level/category. Return games as an empty array [].";
+  }
+
+  return `GAMES (optional — include only if the level benefits; otherwise empty array):
+${parts.join("\n\n")}`;
 }
 
 export function buildPlacementPrompt(): string {

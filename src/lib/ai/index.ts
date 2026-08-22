@@ -1,8 +1,8 @@
 import {
   decryptKey,
 } from "./keys";
-import { callProvider, type AiMessage, type AiResult } from "./providers";
-import { estimateCostIdr, PROVIDER_MODELS, type ProviderId } from "./cost";
+import { callProvider, callOpenAITranscribe, type AiMessage, type AiResult, type SttResult } from "./providers";
+import { estimateCostIdr, estimateSttCostIdr, PROVIDER_MODELS, type ProviderId } from "./cost";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -144,6 +144,66 @@ export async function generateWithFallback(
       ? `Semua provider AI gagal. Terakhir: ${lastError.message}`
       : "Belum ada API key AI yang dikonfigurasi. Atur di menu Admin → Pengaturan AI.",
   );
+}
+
+/**
+ * Transkripsi audio via OpenAI STT.
+ * STT saat ini hanya didukung OpenAI (model termurah & terintegrasi dengan key
+ * yang sudah dikonfigurasi). Jika key OpenAI kosong, lempar error jelas.
+ */
+export async function transcribeWithFallback(
+  audioBuffer: Buffer,
+  filename: string,
+  opts?: { model?: string; durationSeconds?: number },
+): Promise<SttResult> {
+  const settings = await getAiSettings();
+  const keys = getDecryptedKeys(settings);
+  const apiKey = keys.openai;
+
+  if (!apiKey) {
+    throw new Error(
+      "Fitur ucapan butuh API key OpenAI. Atur di menu Admin → Pengaturan AI.",
+    );
+  }
+
+  try {
+    return await callOpenAITranscribe(apiKey, audioBuffer, filename, {
+      model: opts?.model,
+      durationSeconds: opts?.durationSeconds,
+    });
+  } catch (err) {
+    throw new Error(
+      `Transkripsi gagal. ${(err as Error).message}`,
+    );
+  }
+}
+
+/**
+ * Catat pemakaian STT ke ai_usage_log (via RPC) untuk monitoring biaya.
+ * Best-effort: jika gagal, tidak menghentikan alur utama.
+ */
+export async function logSttUsage(params: {
+  result: SttResult;
+  purpose: string;
+  lessonId?: string | null;
+}): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const supabase = await createClient();
+    if (!supabase) return;
+    const cost = estimateSttCostIdr(params.result.durationSeconds);
+    await supabase.rpc("log_ai_usage", {
+      p_provider: params.result.provider,
+      p_model: params.result.model,
+      p_purpose: params.purpose,
+      p_prompt_tokens: 0,
+      p_completion_tokens: 0,
+      p_estimated_cost_idr: cost,
+      p_lesson_id: params.lessonId ?? null,
+    });
+  } catch {
+    // abaikan
+  }
 }
 
 /**

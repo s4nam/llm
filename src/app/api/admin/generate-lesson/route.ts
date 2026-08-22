@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildLessonPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
-import { validateLessonDraft, type LessonDraft } from "@/lib/ai/validate";
+import { validateLessonDraft, validateLessonGames, type LessonDraft } from "@/lib/ai/validate";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { readJson } from "@/lib/http";
 import type { Category, CefrLevel } from "@/lib/types";
@@ -64,6 +64,29 @@ export async function POST(request: Request) {
     );
   }
 
+  // Cegah duplikat (lapis server): tolak bila topik yang sama sudah ada di
+  // level + kategori yang sama, baik draft maupun published.
+  try {
+    const { data: existing } = await supabase.rpc("list_lessons_admin");
+    const dup = (Array.isArray(existing) ? existing : []).find(
+      (l) =>
+        l.level_code === level &&
+        l.category === category &&
+        l.title.toLowerCase() === topic.toLowerCase(),
+    );
+    if (dup) {
+      return NextResponse.json(
+        {
+          error: `Topik ini sudah ada di level ${level} (${category}): "${dup.title}" (${dup.status}). Generate batal untuk mencegah duplikat. Buka Daftar Materi untuk melihat/mengeditnya.`,
+        },
+        { status: 409 },
+      );
+    }
+  } catch {
+    // Jika cek duplikat gagal, lanjutkan — jangan blokir generate karena ini
+    // hanya pengaman tambahan. Duplikasi masih dicegah di level DB (slug unik).
+  }
+
   try {
     const result = await generateWithFallback(
       [
@@ -73,7 +96,7 @@ export async function POST(request: Request) {
         },
         { role: "user", content: buildLessonPrompt({ level, category, topic }) },
       ],
-      { maxTokens: 2500 },
+      { maxTokens: 6000 },
     );
 
     const draft = parseJson<LessonDraft>(result.content);
@@ -82,6 +105,31 @@ export async function POST(request: Request) {
     const problems = validateLessonDraft(draft);
     if (problems.length > 0) {
       throw new Error(problems.slice(0, 5).join(" "));
+    }
+
+    // Games OPSIONAL — validasi lunak: jika rusak, fallback [] (tidak menggagalkan)
+    const games = Array.isArray(draft.games) && draft.games.length > 0 ? draft.games : [];
+    const gamesProblems = validateLessonGames(games);
+    if (gamesProblems.length > 0) {
+      throw new Error(`Games tidak valid: ${gamesProblems.slice(0, 3).join(" | ")}`);
+    }
+
+    // Cek duplikat LAPIS KEDUA: judul hasil AI (draft.topic) bisa berbeda dari
+    // input admin. Tolak bila judul hasil AI sudah ada di level+kategori sama.
+    const aiTitle = (draft.topic ?? "").trim();
+    if (aiTitle.length >= 3) {
+      const { data: existingAfter } = await supabase.rpc("list_lessons_admin");
+      const dupAfter = (Array.isArray(existingAfter) ? existingAfter : []).find(
+        (l) =>
+          l.level_code === level &&
+          l.category === category &&
+          l.title.toLowerCase() === aiTitle.toLowerCase(),
+      );
+      if (dupAfter) {
+        throw new Error(
+          `AI menghasilkan judul "${aiTitle}" yang sudah ada di level ${level} (${category}, ${dupAfter.status}). Generate dibatalkan untuk mencegah duplikat.`,
+        );
+      }
     }
 
     // Simpan sebagai draft (belum publish — menunggu approval admin)
@@ -103,6 +151,7 @@ export async function POST(request: Request) {
         p_intro: draft.intro,
         p_sections: draft.sections,
         p_quiz: draft.quiz,
+        p_games: games,
         p_is_free: isFree,
       },
     );

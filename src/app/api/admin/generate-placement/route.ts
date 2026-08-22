@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         },
         { role: "user", content: buildPlacementPrompt() },
       ],
-      { maxTokens: 2500 },
+      { maxTokens: 4000 },
     );
 
     const draft = parseJson<PlacementDraft>(result.content);

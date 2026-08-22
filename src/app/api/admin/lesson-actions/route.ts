@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { generateWithFallback, logAiUsage } from "@/lib/ai";
 import { buildLessonPrompt } from "@/lib/ai/prompts";
 import { parseJson } from "@/lib/ai/parse";
+import { validateLessonDraft, validateLessonGames } from "@/lib/ai/validate";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { readJson } from "@/lib/http";
 
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
             }),
           },
         ],
-        { maxTokens: 2500 },
+        { maxTokens: 6000 },
       );
 
       const draft = parseJson<{
@@ -107,13 +108,34 @@ export async function POST(request: Request) {
           answerIndex: number;
           explanation: string;
         }[];
+        games?: unknown[];
       }>(result.content);
+
+      // Validasi kuis (gagal = seluruh regenerate ditolak)
+      const problems = validateLessonDraft(draft as Parameters<typeof validateLessonDraft>[0]);
+      if (problems.length > 0) {
+        return NextResponse.json(
+          { error: problems.slice(0, 5).join(" ") },
+          { status: 500 },
+        );
+      }
+
+      // Games opsional — jika rusak, fallback []
+      const games = Array.isArray(draft.games) && draft.games.length > 0 ? draft.games : [];
+      const gamesProblems = validateLessonGames(games);
+      if (gamesProblems.length > 0) {
+        return NextResponse.json(
+          { error: `Games tidak valid: ${gamesProblems.slice(0, 3).join(" | ")}` },
+          { status: 500 },
+        );
+      }
 
       const { error } = await supabase.rpc("regenerate_lesson", {
         p_lesson_id: id,
         p_intro: draft.intro,
         p_sections: draft.sections,
         p_quiz: draft.quiz,
+        p_games: games,
       });
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -16,6 +16,9 @@ export default function AdminHeader() {
             <Link href="/admin/academic" className="hover:text-sky-300">
               Latihan Akademik
             </Link>
+            <Link href="/admin/situasional" className="hover:text-sky-300">
+              Situasional
+            </Link>
             <Link href="/admin/pengaturan-ai" className="hover:text-sky-300">
               Pengaturan AI
             </Link>
@@ -54,6 +57,9 @@ export default function AdminHeader() {
         </Link>
         <Link href="/admin/academic" className="shrink-0 text-sky-300">
           Latihan Akademik
+        </Link>
+        <Link href="/admin/situasional" className="shrink-0 text-sky-300">
+          Situasional
         </Link>
         <Link href="/admin/pengaturan-ai" className="shrink-0 text-sky-300">
           Pengaturan AI

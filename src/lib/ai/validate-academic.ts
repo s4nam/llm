@@ -17,6 +17,15 @@ import type {
 const isNonEmpty = (s: unknown): s is string =>
   typeof s === "string" && s.trim().length > 0;
 
+/** Normalisasi nama tipe soal agar variasi ejaan AI tetap diterima. */
+function normalizeType(t: string): string {
+  return t
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace("stance/attitude", "stance")
+    .trim();
+}
+
 const READING_TYPES = [
   "detail",
   "vocabulary-in-context",
@@ -74,10 +83,14 @@ function validateQuestion(
   if (!isNonEmpty(item.explanation)) {
     problems.push(`${scope} soal #${index + 1} tidak punya penjelasan.`);
   }
-  if (allowedTypes && item.type && !allowedTypes.includes(item.type)) {
-    problems.push(
-      `${scope} soal #${index + 1} tipe "${item.type}" tidak dikenal.`,
-    );
+  if (allowedTypes && item.type) {
+    const t = normalizeType(item.type);
+    const known = allowedTypes.some((a) => normalizeType(a) === t);
+    if (!known) {
+      problems.push(
+        `${scope} soal #${index + 1} tipe "${item.type}" tidak dikenal.`,
+      );
+    }
   }
 }
 
@@ -205,6 +218,51 @@ function validateSpeaking(content: { tasks?: unknown }, problems: string[]): voi
       problems.push(`Speaking task #${i + 1} speakSeconds tidak valid.`);
     }
   });
+}
+
+/**
+ * Validasi SATU passage/script (satu chunk hasil generate bertahap).
+ * Tidak menuntut jumlah minimal unit — itu di cek di level set.
+ */
+export function validateAcademicChunk(
+  section: AcademicSection,
+  item: unknown,
+): string[] {
+  const problems: string[] = [];
+  if (typeof item !== "object" || item === null) {
+    problems.push("Chunk bukan objek valid.");
+    return problems;
+  }
+  const obj = item as Partial<AcademicScript & { text: string }>;
+
+  if (section === "reading") {
+    if (!isNonEmpty(obj.title)) problems.push("Passage tidak punya judul.");
+    if (!isNonEmpty(obj.text) || (obj.text as string).trim().length < 200) {
+      problems.push("Passage teks terlalu pendek (min. 200 karakter).");
+    }
+    if (!Array.isArray(obj.questions) || obj.questions.length < 5) {
+      problems.push("Passage harus punya minimal 5 soal.");
+    } else {
+      obj.questions.forEach((q, qi) =>
+        validateQuestion(q, problems, qi, "Passage", READING_TYPES),
+      );
+      findDuplicateQuestions(obj.questions, problems, "Passage");
+    }
+  } else {
+    if (!isNonEmpty(obj.title)) problems.push("Script tidak punya judul.");
+    if (!isNonEmpty(obj.script) || (obj.script as string).trim().length < 150) {
+      problems.push("Script terlalu pendek (min. 150 karakter).");
+    }
+    if (!Array.isArray(obj.questions) || obj.questions.length < 5) {
+      problems.push("Script harus punya minimal 5 soal.");
+    } else {
+      obj.questions.forEach((q, qi) =>
+        validateQuestion(q, problems, qi, "Script", LISTENING_TYPES),
+      );
+      findDuplicateQuestions(obj.questions, problems, "Script");
+    }
+  }
+  return problems;
 }
 
 /**
