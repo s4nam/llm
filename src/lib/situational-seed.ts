@@ -21,6 +21,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "hotel-check-in",
     isFree: true,
     content: {
+      aiName: "Sarah",
       dialogues: [
         { speaker: "ai", text: "Good evening. Welcome to our hotel. How can I help you?" },
         { speaker: "user", text: "Good evening. I have a reservation under the name Budi." },
@@ -77,6 +78,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "restaurant-ordering-food",
     isFree: true,
     content: {
+      aiName: "David",
       dialogues: [
         { speaker: "ai", text: "Welcome! Here is the menu. What would you like to order?" },
         { speaker: "user", text: "I'd like the grilled chicken with rice, please." },
@@ -133,6 +135,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "travel-at-airport",
     isFree: true,
     content: {
+      aiName: "Nina",
       dialogues: [
         { speaker: "ai", text: "Good morning. May I see your passport and ticket, please?" },
         { speaker: "user", text: "Here you are. Is the flight to Jakarta on time?" },
@@ -189,6 +192,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "shopping-price-size",
     isFree: true,
     content: {
+      aiName: "Maya",
       dialogues: [
         { speaker: "ai", text: "Hi! Are you looking for anything special?" },
         { speaker: "user", text: "Yes, how much is this blue t-shirt?" },
@@ -245,6 +249,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "health-visiting-doctor",
     isFree: true,
     content: {
+      aiName: "Dr. Arif",
       dialogues: [
         { speaker: "ai", text: "Good morning. What brings you in today?" },
         { speaker: "user", text: "I have a headache and I feel very tired." },
@@ -301,6 +306,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "interview-introduce-yourself",
     isFree: true,
     content: {
+      aiName: "Pak Hendra",
       dialogues: [
         { speaker: "ai", text: "Good morning. Thank you for coming. Could you introduce yourself?" },
         { speaker: "user", text: "Of course. My name is Dewi, and I have two years of experience in marketing." },
@@ -357,6 +363,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "phone-restaurant-reservation",
     isFree: true,
     content: {
+      aiName: "Lina",
       dialogues: [
         { speaker: "ai", text: "Good afternoon, Sakura Restaurant. How can I help you?" },
         { speaker: "user", text: "Hello, I'd like to book a table for two tonight at seven." },
@@ -413,6 +420,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "bank-open-account",
     isFree: true,
     content: {
+      aiName: "Dian",
       dialogues: [
         { speaker: "ai", text: "Welcome. How can I assist you today?" },
         { speaker: "user", text: "I'd like to open a savings account, please." },
@@ -469,6 +477,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "office-team-meeting",
     isFree: true,
     content: {
+      aiName: "Pak Arman",
       dialogues: [
         { speaker: "ai", text: "Good morning, everyone. Let's start the meeting." },
         { speaker: "user", text: "Good morning. I'd like to share an update on the new project." },
@@ -525,6 +534,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "school-ask-in-class",
     isFree: true,
     content: {
+      aiName: "Bu Ratna",
       dialogues: [
         { speaker: "ai", text: "Class, please open your books to page twenty." },
         { speaker: "user", text: "Excuse me, could you explain this word again?" },
@@ -581,6 +591,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "social-meet-at-party",
     isFree: true,
     content: {
+      aiName: "Andi",
       dialogues: [
         { speaker: "ai", text: "Hi, I don't think we've met. I'm Andi." },
         { speaker: "user", text: "Nice to meet you, Andi. I'm Sari. How do you know the host?" },
@@ -623,7 +634,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
       roleplay: {
         scenario: "Anda baru tiba di pesta dan ingin berkenalan dengan orang baru.",
         lines: [
-          { speaker: "ai", text: "Hi there! I'm Rudi. Are you enjoying the party?" },
+          { speaker: "ai", text: "Hi there! I'm Andi. Are you enjoying the party?" },
           { speaker: "user", text: "Yes, I am! I'm Maya. It's nice to meet you." },
           { speaker: "ai", text: "Nice to meet you too. Would you like something to drink?" },
         ],
@@ -637,6 +648,7 @@ export const SITUATIONAL_SEED: SituationalSeedSet[] = [
     slug: "customer-service-complaint",
     isFree: true,
     content: {
+      aiName: "Citra",
       dialogues: [
         { speaker: "ai", text: "Hello, thank you for calling our support line. How can I help?" },
         { speaker: "user", text: "I received a damaged product yesterday and I'd like a refund." },

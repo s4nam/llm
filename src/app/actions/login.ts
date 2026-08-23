@@ -14,6 +14,7 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const mode = String(formData.get("mode") ?? "member");
 
   const headerList = await headers();
   const ip = clientIp(headerList);
@@ -89,6 +90,16 @@ export async function login(
       ]);
       const isAdmin =
         adminRes.status === "fulfilled" && Boolean(adminRes.value.data);
+
+      // Tab Admin tapi akun bukan admin → batalkan sesi, beri pesan jelas
+      if (mode === "admin" && !isAdmin) {
+        await supabase.auth.signOut();
+        return {
+          message:
+            "Email ini bukan akun admin. Gunakan tab Member untuk masuk sebagai pengguna biasa.",
+        };
+      }
+
       if (isAdmin) {
         const sec = secRes.status === "fulfilled" ? secRes.value.data : null;
         const row = Array.isArray(sec) ? sec[0] : sec;
@@ -103,7 +114,8 @@ export async function login(
     }
   }
 
-  redirect("/dashboard");
+  // Admin → dashboard admin; member → dashboard belajar
+  redirect(mode === "admin" ? "/admin" : "/dashboard");
 }
 
 export async function logout() {

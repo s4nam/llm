@@ -65,19 +65,24 @@ Topic: ${TOPIC_LABEL[params.topic]} — ${TOPIC_CONTEXT[params.topic]}
 Title / situation: "${params.title}"
 
 Create one complete set with this structure:
-1. "dialogues": exactly 4 lines of a natural 2-party dialogue (the situation above).
+1. "aiName": the name of the "ai" speaker — a natural human name that fits the
+   role in this situation (e.g. receptionist "Sarah", waiter "David", doctor "Dr. Maya",
+   bank teller "Dian"). Do NOT use "AI", "Assistant", or "Bot". Use the SAME name for
+   every "ai" line in both "dialogues" and "roleplay" so the conversation feels real.
+2. "dialogues": exactly 4 lines of a natural 2-party dialogue (the situation above).
    Each line: { "speaker": "ai" | "user", "text": string }. Alternate speakers so the
    user ("user") gets to speak. "ai" lines will be read aloud by text-to-speech — write natural spoken English.
-2. "vocab": exactly 5 items: { "word": string, "meaning": string } — key words/phrases
+3. "vocab": exactly 5 items: { "word": string, "meaning": string } — key words/phrases
    from the dialogue with their Indonesian meaning (all levels).
-3. "quiz": exactly 4 multiple-choice comprehension questions about the dialogue.
+4. "quiz": exactly 4 multiple-choice comprehension questions about the dialogue.
    Each: { "question": string, "options": [4], "answerIndex": int 0-3, "explanation": string (Bahasa Indonesia) }.
-4. "roleplay": { "scenario": string (Bahasa Indonesia, short), "lines": [array of 3 lines
+5. "roleplay": { "scenario": string (Bahasa Indonesia, short), "lines": [array of 3 lines
    { "speaker": "ai"|"user", "text": string } that re-use the same situation with slightly different
    wording, "keyPhrases": [array of 3-4 useful English phrases from the dialogue] }.
 
 OUTPUT FORMAT: Return ONLY valid JSON (no markdown, no code fences):
 {
+  "aiName": string,
   "dialogues": [ { "speaker": "ai"|"user", "text": string } ],
   "vocab": [ { "word": string, "meaning": string } ],
   "quiz": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string } ],
@@ -99,11 +104,15 @@ export function buildSituationalRepairMessages(params: {
 Output AI "${TOPIC_LABEL[params.topic]}" di bawah TIDAK VALID. Perbaiki menjadi JSON LENGKAP yang valid.
 Target: 4 baris dialog (ai/user bergantian), 5 kosakata, 4 soal kuis, 1 roleplay.
 
+"aiName" WAJIB: nama orang natural untuk lawan bicara "ai" (mis. receptionist "Sarah",
+waiter "David"), konsisten di dialog & roleplay. JANGAN pakai "AI"/"Assistant"/"Bot".
+
 Masalah yang ditemukan:
 - ${params.problems.slice(0, 5).join("\n- ")}
 
 OUTPUT FORMAT: Kembalikan HANYA JSON valid (tanpa markdown, tanpa teks lain):
 {
+  "aiName": string,
   "dialogues": [ { "speaker": "ai"|"user", "text": string } ],
   "vocab": [ { "word": string, "meaning": string } ],
   "quiz": [ { "question": string, "options": [4], "answerIndex": number, "explanation": string } ],

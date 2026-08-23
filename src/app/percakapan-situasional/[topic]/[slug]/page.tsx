@@ -54,6 +54,8 @@ export default async function SituationalSetPage({
           <SituationalPlayer
             title={setRow.title}
             content={setRow.content as SituationalSetContent}
+            setId={setRow.id}
+            slug={setRow.slug}
           />
         </main>
         <Footer />
@@ -79,7 +81,7 @@ export default async function SituationalSetPage({
           {topicInfo.icon} {topicInfo.label} • Percakapan
         </p>
         <h1 className="mt-1 text-3xl font-bold text-slate-900">{seed.title}</h1>
-        <SituationalPlayer title={seed.title} content={seed.content} />
+        <SituationalPlayer title={seed.title} content={seed.content} slug={seed.slug} />
       </main>
       <Footer />
     </>

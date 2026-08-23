@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LessonDetail } from "@/lib/types";
 import LessonGames from "@/components/lesson-games";
 import SaveToStudySet from "@/components/save-to-study-set";
+import ReportProblem from "@/components/report-problem";
 
 const FREE_STORAGE_KEY = "em_free_progress";
 
@@ -34,8 +35,6 @@ export default function LessonPlayer({
   const [optionOrder, setOptionOrder] = useState<number[][]>([]);
   const [result, setResult] = useState<boolean[]>([]);
   const [saving, setSaving] = useState(false);
-  const [reporting, setReporting] = useState(false);
-  const [reportMsg, setReportMsg] = useState<string | null>(null);
   // Selalu true di awal (server & client sama), lalu diperiksa ulang setelah mount.
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
@@ -162,21 +161,6 @@ export default function LessonPlayer({
     setResult(correct);
     setSubmitted(true);
     setSaving(false);
-  }
-
-  async function report() {
-    const note = window.prompt(
-      "Jelaskan masalah pada materi ini (misal: ada kesalahan tata bahasa atau terjemahan):",
-    );
-    if (!note) return;
-    setReporting(true);
-    const res = await fetch("/api/lesson", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "report", lessonId: lesson.id, note }),
-    });
-    setReporting(false);
-    setReportMsg(res.ok ? "Terima kasih! Laporan Anda sudah terkirim." : "Gagal mengirim laporan.");
   }
 
   async function submitWriting() {
@@ -343,10 +327,11 @@ export default function LessonPlayer({
                 {qIndex + 1}. {q.question}
               </p>
               <div className="mt-3 flex flex-col gap-2">
-                {q.options.map((option, oIndex) => {
+                {q.options.map((_, oIndex) => {
                   // oIndex = index TAMPILAN; order = index asli dalam urutan tampilan.
                   const order = optionOrder[qIndex];
                   const realIndex = order ? order[oIndex] : oIndex;
+                  const option = q.options[realIndex];
                   const isSelected = answers[qIndex] === realIndex;
                   const isCorrect = submitted && realIndex === q.answerIndex;
                   const isWrong = submitted && isSelected && realIndex !== q.answerIndex;
@@ -424,20 +409,7 @@ export default function LessonPlayer({
       <LessonGames games={lesson.games ?? []} speak={speak} ttsEnabled={ttsEnabled} />
 
       {/* Report issue */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="text-sm text-slate-500">
-          Ada yang salah di materi ini?
-        </p>
-        <button
-          type="button"
-          onClick={report}
-          disabled={reporting}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
-          {reporting ? "Mengirim..." : "Laporkan masalah"}
-        </button>
-      </div>
-      {reportMsg && <p className="text-center text-sm text-success">{reportMsg}</p>}
+      <ReportProblem module="lesson" refId={lesson.id} questionCount={lesson.quiz.length} />
     </div>
   );
 }

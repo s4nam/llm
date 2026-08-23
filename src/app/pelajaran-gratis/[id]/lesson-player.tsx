@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { FreeLesson } from "@/lib/types";
 import LessonGames from "@/components/lesson-games";
+import ReportProblem from "@/components/report-problem";
 
 const STORAGE_KEY = "em_free_progress";
 type Stored = Record<string, { completed: boolean; bestScore: number }>;
@@ -178,10 +179,11 @@ export default function LessonPlayer({
                 {qIndex + 1}. {q.question}
               </p>
               <div className="mt-3 flex flex-col gap-2">
-                {q.options.map((option, oIndex) => {
+                {q.options.map((_, oIndex) => {
                   // oIndex = index TAMPILAN; order = index asli dalam urutan tampilan.
                   const order = optionOrder[qIndex];
                   const realIndex = order ? order[oIndex] : oIndex;
+                  const option = q.options[realIndex];
                   const isSelected = answers[qIndex] === realIndex;
                   const isCorrect =
                     submitted && realIndex === q.answerIndex;
@@ -248,6 +250,9 @@ export default function LessonPlayer({
 
       {/* Games (latihan tambahan per level CEFR) */}
       <LessonGames games={lesson.games ?? []} speak={speak} ttsEnabled={ttsEnabled} />
+
+      {/* Report issue */}
+      <ReportProblem module="lesson" refId={lesson.id} questionCount={lesson.quiz.length} />
 
       {/* Next / Join CTA */}
       {submitted && (

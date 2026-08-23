@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import ReportProblem from "@/components/report-problem";
 
 interface Question {
   question: string;
@@ -219,6 +220,12 @@ export default function PlacementPage() {
               Ulangi Tes
             </button>
           </>
+        )}
+
+        {(phase === "test" || phase === "result") && (
+          <div className="mt-6">
+            <ReportProblem module="placement" refId="placement" questionCount={questions.length} />
+          </div>
         )}
       </div>
     </div>

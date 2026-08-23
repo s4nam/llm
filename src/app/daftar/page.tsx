@@ -109,6 +109,7 @@ export default function SignupPage() {
               name="name"
               type="text"
               required
+              suppressHydrationWarning
               minLength={2}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -129,6 +130,7 @@ export default function SignupPage() {
               name="email"
               type="email"
               required
+              suppressHydrationWarning
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="kamu@email.com"
@@ -155,6 +157,7 @@ export default function SignupPage() {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 required
+                suppressHydrationWarning
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -163,6 +166,7 @@ export default function SignupPage() {
               />
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
                 className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-600"
@@ -181,7 +185,7 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-2 text-sm text-slate-600">
             <label className="flex items-start gap-2">
-              <input type="checkbox" name="consent" required className="mt-1" />
+              <input type="checkbox" name="consent" required suppressHydrationWarning className="mt-1" />
               <span>
                 Saya menyetujui{" "}
                 <Link href="/syarat-ketentuan" className="text-brand underline">
@@ -195,7 +199,7 @@ export default function SignupPage() {
               </span>
             </label>
             <label className="flex items-start gap-2">
-              <input type="checkbox" name="parentalConsent" required className="mt-1" />
+              <input type="checkbox" name="parentalConsent" required suppressHydrationWarning className="mt-1" />
               <span>
                 Saya berusia 17 tahun ke atas, atau memiliki izin dari orang
                 tua/wali.
@@ -248,6 +252,7 @@ export default function SignupPage() {
                       name="oldEmail"
                       type="email"
                       required
+                      suppressHydrationWarning
                       defaultValue={email}
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
                     />
@@ -264,6 +269,7 @@ export default function SignupPage() {
                       name="newEmail"
                       type="email"
                       required
+                      suppressHydrationWarning
                       placeholder="kamu@email.com"
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light"
                     />
@@ -280,6 +286,7 @@ export default function SignupPage() {
                   )}
                   <button
                     type="submit"
+                    suppressHydrationWarning
                     disabled={changePending}
                     className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
                   >
@@ -292,6 +299,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
+            suppressHydrationWarning
             disabled={pending}
             className="rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
           >

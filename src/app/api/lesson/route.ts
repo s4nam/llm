@@ -169,6 +169,8 @@ export async function POST(request: Request) {
       const { error } = await supabase.from("lesson_reports").insert({
         user_id: user.id,
         lesson_id: lessonId,
+        module: "lesson",
+        ref_id: lessonId,
         note,
       });
       if (error) throw error;

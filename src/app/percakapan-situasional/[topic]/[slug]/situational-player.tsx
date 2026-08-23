@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { SituationalSetContent } from "@/lib/types-situational";
+import ReportProblem from "@/components/report-problem";
 
 /** Acak array (Fisher–Yates). */
 function shuffle<T>(arr: T[]): T[] {
@@ -16,9 +17,13 @@ function shuffle<T>(arr: T[]): T[] {
 export default function SituationalPlayer({
   title,
   content,
+  setId,
+  slug,
 }: {
   title: string;
   content: SituationalSetContent;
+  setId?: string;
+  slug?: string;
 }) {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
@@ -107,7 +112,7 @@ export default function SituationalPlayer({
                 }`}
               >
                 <span className="mt-0.5 shrink-0 rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                  {line.speaker === "ai" ? "AI" : "Kamu"}
+                  {line.speaker === "ai" ? (content.aiName ?? "AI") : "Kamu"}
                 </span>
                 <p className="flex-1 text-sm leading-6 text-slate-800">{line.text}</p>
                 {line.speaker === "ai" && ttsEnabled && (
@@ -159,9 +164,10 @@ export default function SituationalPlayer({
                   {qIndex + 1}. {q.question}
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
-                  {q.options.map((option, oIndex) => {
+                  {q.options.map((_, oIndex) => {
                     const order = optionOrder[qIndex];
                     const realIndex = order ? order[oIndex] : oIndex;
+                    const option = q.options[realIndex];
                     const isSelected = answers[qIndex] === realIndex;
                     const isCorrect = submitted && realIndex === q.answerIndex;
                     const isWrong = submitted && isSelected && realIndex !== q.answerIndex;
@@ -234,7 +240,7 @@ export default function SituationalPlayer({
                 }`}
               >
                 <span className="mt-0.5 shrink-0 rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                  {line.speaker === "ai" ? "AI" : "Kamu"}
+                  {line.speaker === "ai" ? (content.aiName ?? "AI") : "Kamu"}
                 </span>
                 <p className="flex-1 text-sm leading-6 text-slate-800">{line.text}</p>
                 {line.speaker === "ai" && ttsEnabled && (
@@ -266,6 +272,15 @@ export default function SituationalPlayer({
           )}
         </section>
       )}
+
+      {/* Report issue */}
+      <div className="mt-2">
+        <ReportProblem
+          module="situational"
+          refId={setId ?? slug ?? "unknown"}
+          questionCount={content.quiz.length}
+        />
+      </div>
     </div>
   );
 }

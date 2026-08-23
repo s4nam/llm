@@ -5,6 +5,7 @@
  */
 
 export interface SituationalDraft {
+  aiName?: string;
   dialogues?: { speaker?: string; text?: string }[];
   vocab?: { word?: string; meaning?: string }[];
   quiz?: {
@@ -36,6 +37,13 @@ export function validateSituationalDraft(
 
   if (!draft || typeof draft !== "object") {
     return ["Hasil AI bukan objek set yang valid."];
+  }
+
+  // Nama lawan bicara ("ai") wajib untuk hasil generate baru
+  if (!isNonEmpty(draft.aiName)) {
+    problems.push(
+      "Butuh 'aiName' — nama orang natural untuk lawan bicara (mis. 'Sarah', 'David').",
+    );
   }
 
   // Dialog: tepat 4 baris, speaker ai/user bergantian

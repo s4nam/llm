@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCountdown, formatSeconds } from "@/lib/use-countdown";
 import type { AcademicPassage } from "@/lib/types-academic";
+import ReportProblem from "@/components/report-problem";
 
 interface Answer {
   passageIndex: number;
@@ -219,6 +220,10 @@ export default function ReadingPractice({
           </button>
         </>
       )}
+
+      <div className="mt-6">
+        <ReportProblem module="toefl" refId={setId} questionCount={totalQuestions} />
+      </div>
     </section>
   );
 }

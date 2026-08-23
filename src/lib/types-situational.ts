@@ -138,6 +138,12 @@ export interface SituationalRoleplay {
 }
 
 export interface SituationalSetContent {
+  /**
+   * Nama lawan bicara ("ai") untuk dialog & roleplay — nama orang yang natural
+   * sesuai peran (mis. resepsionis, pelayan). Satu nama per set.
+   * Opsional: jika kosong, tampilan memakai label "AI" (kompatibel mundur).
+   */
+  aiName?: string;
   /** Dialog 2 pihak (AI dibacakan TTS, user membaca gilirannya). */
   dialogues: SituationalDialogueLine[];
   /** Kosakata situasi + artinya. */

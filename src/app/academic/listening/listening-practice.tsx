@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCountdown, formatSeconds } from "@/lib/use-countdown";
 import { createAudioController } from "@/lib/audio";
 import type { AcademicScript } from "@/lib/types-academic";
+import ReportProblem from "@/components/report-problem";
 
 interface Answer {
   passageIndex: number;
@@ -240,6 +241,10 @@ export default function ListeningPractice({
           </button>
         </>
       )}
+
+      <div className="mt-6">
+        <ReportProblem module="toefl" refId={setId} questionCount={totalQuestions} />
+      </div>
     </section>
   );
 }

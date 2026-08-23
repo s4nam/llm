@@ -3,6 +3,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import ProfileManager from "./profile-manager";
+import MyReports from "./my-reports";
 
 export default async function ProfilPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
@@ -26,6 +27,15 @@ export default async function ProfilPage() {
     .eq("user_id", user.id)
     .order("issued_at", { ascending: false });
 
+  // Laporan masalah yang pernah dikirim user ini
+  const { data: reports } = await supabase
+    .from("lesson_reports")
+    .select(
+      "id, module, note, question_indices, status, admin_reply, created_at, resolved_at",
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
   return (
     <>
       <Header />
@@ -42,6 +52,9 @@ export default async function ProfilPage() {
           provider={provider}
           hasPassword={hasPassword}
         />
+
+        {/* Laporan masalah user */}
+        <MyReports reports={reports ?? []} />
 
         {/* Sertifikat */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">

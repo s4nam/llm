@@ -59,12 +59,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
   const reportId = String(body.reportId ?? "");
+  const reply = String(body.reply ?? "").trim().slice(0, 500);
 
   if (!reportId) {
     return NextResponse.json({ error: "ID laporan diperlukan." }, { status: 400 });
   }
 
-  const { error } = await supabase.rpc("resolve_report", { p_report_id: reportId });
+  const { error } = await supabase.rpc("resolve_report", {
+    p_report_id: reportId,
+    p_reply: reply || null,
+  });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

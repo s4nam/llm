@@ -8,6 +8,7 @@ interface SituationalSetView {
   topic: string;
   title: string;
   content: {
+    aiName?: string;
     dialogues?: { speaker: string; text: string }[];
     vocab?: { word: string; meaning: string }[];
     quiz?: { question: string; options: string[]; answerIndex: number; explanation: string }[];
@@ -124,7 +125,7 @@ export default function SituationalDetailView({ set }: { set: SituationalSetView
                   d.speaker === "ai" ? "bg-surface text-slate-600" : "bg-brand-light/30 text-slate-800"
                 }`}
               >
-                <b>{d.speaker === "ai" ? "AI" : "Kamu"}:</b> {d.text}
+                <b>{d.speaker === "ai" ? (set.content.aiName ?? "AI") : "Kamu"}:</b> {d.text}
               </div>
             ))}
           </div>
@@ -184,7 +185,7 @@ export default function SituationalDetailView({ set }: { set: SituationalSetView
           <div className="mt-3 flex flex-col gap-2">
             {(set.content.roleplay.lines ?? []).map((l, i) => (
               <div key={i} className="rounded-lg bg-surface px-3 py-2 text-sm">
-                <b>{l.speaker === "ai" ? "AI" : "Kamu"}:</b> {l.text}
+                <b>{l.speaker === "ai" ? (set.content.aiName ?? "AI") : "Kamu"}:</b> {l.text}
               </div>
             ))}
           </div>

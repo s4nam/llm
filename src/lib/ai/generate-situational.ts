@@ -57,6 +57,7 @@ export async function generateSituationalSet(
       if (problems.length === 0) {
         // Normalisasi ke struktur yang diharapkan
         return {
+          aiName: draft.aiName ?? "AI",
           dialogues: (draft.dialogues ?? []).map((d) => ({
             speaker: d.speaker,
             text: d.text ?? "",

@@ -5,6 +5,7 @@ import { set2faPending } from "@/lib/security";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const type = url.searchParams.get("type");
   const next = url.searchParams.get("next") ?? "/dashboard";
 
   if (code) {
@@ -14,6 +15,11 @@ export async function GET(request: Request) {
     }
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data?.user) {
+      // Alur lupa password → langsung ke halaman atur ulang kata sandi.
+      if (type === "recovery") {
+        return NextResponse.redirect(new URL("/auth/reset-password", url.origin));
+      }
+
       // 2FA: jika user adalah admin dengan TOTP aktif → wajib verifikasi kode
       // sebelum sesi dipakai penuh (sama seperti login password).
       try {
