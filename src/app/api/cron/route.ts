@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { checkTransactionStatus } from "@/lib/midtrans";
 import { sendPaymentInvoice } from "@/lib/payment-invoice";
 import { sendTrialEnding, sendRenewalReminder, sendDailyReminder } from "@/lib/email";
+import { isPushConfigured, sendPushToUser } from "@/lib/push";
 
 /**
  * Cron job (dipanggil Vercel Cron tiap 6 jam).
@@ -43,6 +44,9 @@ export async function GET(request: Request) {
     trialEmails: 0,
     renewEmails: 0,
     reminders: 0,
+    trialPush: 0,
+    renewPush: 0,
+    reminderPush: 0,
   };
 
   try {
@@ -103,7 +107,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 3. Email pengingat trial H-1 (24 jam sebelum expired)
+    // 3. Email + Push pengingat trial H-1 (24 jam sebelum expired)
     const { data: trialUsers } = await supabase
       .from("profiles")
       .select("id, email, full_name, trial_expires_at")
@@ -114,13 +118,21 @@ export async function GET(request: Request) {
       const diff = expire - Date.now();
       const hoursLeft = diff / (60 * 60 * 1000);
       if (hoursLeft > 6 && hoursLeft <= 30) {
-        // kirim sekali (dalam rentang ~1 hari, wajar terkirim sekali per siklus 6 jam)
         await sendTrialEnding(u.email, u.full_name, new Date(expire));
         results.trialEmails++;
+        if (isPushConfigured()) {
+          const r = await sendPushToUser(supabase, u.id, {
+            title: "Trial hampir habis ⏳",
+            body: `Trial kamu berakhir ${new Date(expire).toLocaleDateString("id-ID", { day: "numeric", month: "long" })}. Langganan sekarang agar progress tidak hilang!`,
+            url: "/langganan",
+            tag: `trial-${u.id}`,
+          });
+          results.trialPush += r.sent;
+        }
       }
     }
 
-    // 4. Email perpanjangan member H-3 & H-1 (dalam 24-72 jam)
+    // 4. Email + Push perpanjangan member H-3 & H-1 (dalam 24-72 jam)
     const { data: members } = await supabase
       .from("profiles")
       .select("id, email, full_name, member_expires_at")
@@ -133,6 +145,15 @@ export async function GET(request: Request) {
         const link = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/langganan`;
         await sendRenewalReminder(m.email, m.full_name, new Date(expire), link);
         results.renewEmails++;
+        if (isPushConfigured()) {
+          const r = await sendPushToUser(supabase, m.id, {
+            title: "Langganan akan berakhir 📅",
+            body: `Masa aktifmu berakhir ${new Date(expire).toLocaleDateString("id-ID")}. Perpanjang sekarang!`,
+            url: "/langganan",
+            tag: `renew-${m.id}`,
+          });
+          results.renewPush += r.sent;
+        }
       }
     }
 
@@ -153,6 +174,15 @@ export async function GET(request: Request) {
           `${appLink}/dashboard`,
           streakRow?.current_streak ?? 0,
         );
+        if (isPushConfigured()) {
+          const r = await sendPushToUser(supabase, u.id, {
+            title: "Jangan putus streak 🔥",
+            body: `Hari ini belum belajar — lanjut 5 menit yuk${streakRow?.current_streak ? ` (streak ${streakRow.current_streak} hari)` : ""}!`,
+            url: "/dashboard",
+            tag: `daily-${u.id}`,
+          });
+          results.reminderPush += r.sent;
+        }
         await supabase.rpc("mark_reminded", { p_user_id: u.id });
         results.reminders++;
       } catch {

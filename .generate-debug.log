@@ -1,0 +1,25 @@
+[2026-08-21T07:20:28.729Z] generate-start | listening | Listening
+[2026-08-21T07:20:42.453Z] chunk | listening | #1/2 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=6302 | head={ "title": "Sound Symbolism and the Bouba-Kiki Effect", "script": "Good morning, class. Today, we're going to challe
+[2026-08-21T07:20:56.753Z] chunk | listening | #2/2 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=6739 | head={ "title": "Sound Symbolism and the Bouba-Kiki Effect", "script": "Good morning, class. Today, we're going to challe
+[2026-08-21T07:20:56.754Z] chunk-fail | listening | #2 | round=0 | attempt=0 | Script soal #5 tipe "stance/attitude" tidak dikenal.
+[2026-08-21T07:21:11.743Z] chunk | listening | #2/2 | round=0 | attempt=1 | gemini:gemini-3.5-flash | len=6531 | head={ "title": "Linguistics: Sound Symbolism and the Bouba-Kiki Effect", "script": "Good morning, class. Today, we're go
+[2026-08-21T07:21:12.540Z] set-ok | listening | items=2
+[2026-08-21T07:21:13.137Z] generate-ok | listening | Listening | 36a9fabb-5321-4d5c-8103-ca5202f15e6e
+[2026-08-21T07:21:54.692Z] generate-start | writing | Writing
+[2026-08-21T07:22:02.605Z] single | writing | attempt=0 | gemini:gemini-3.5-flash | problems=
+[2026-08-21T07:22:04.120Z] generate-ok | writing | Writing | ee780af8-95e4-402c-b6df-0ea8f523b79c
+[2026-08-21T07:22:13.868Z] generate-start | speaking | Speaking
+[2026-08-21T07:22:35.430Z] single | speaking | attempt=0 | gemini:gemini-3.5-flash | problems=
+[2026-08-21T07:22:36.497Z] generate-ok | speaking | Speaking | 496d40f5-7794-402b-be89-bd67a366656d
+[2026-08-21T07:55:31.797Z] regenerate-start | reading | Reading
+[2026-08-21T07:55:46.961Z] chunk | reading | #1/3 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=6529 | head={ "title": "The Decipherment of Linear B", "text": "At the dawn of the twentieth century, British archaeologist Sir 
+[2026-08-21T07:56:04.533Z] chunk | reading | #2/3 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=7169 | head={ "title": "The Decipherment of Linear B", "text": "At the turn of the twentieth century, British archaeologist Sir 
+[2026-08-21T07:56:04.534Z] chunk-fail | reading | #2 | round=0 | attempt=0 | Passage soal #5 tipe "sentence-insertion" tidak dikenal.
+[2026-08-21T07:56:23.297Z] chunk | reading | #2/3 | round=0 | attempt=1 | gemini:gemini-3.5-flash | len=7014 | head={ "title": "The Decipherment of Linear B", "text": "In 1900, British archaeologist Sir Arthur Evans unearthed thousa
+[2026-08-21T07:56:40.286Z] chunk | reading | #3/3 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=6356 | head={ "title": "The Architectural Enigma of Chaco Canyon", "text": "Deep within the arid landscape of northwestern New M
+[2026-08-21T07:56:40.792Z] set-ok | reading | items=3
+[2026-08-21T07:56:41.244Z] regenerate-ok | reading | 1874cbd2-046d-4100-836e-e951c0973415
+[2026-08-22T08:56:40.047Z] situational-generate-start | hotel | Check-in di Hotel
+[2026-08-22T08:56:50.781Z] situational-generate-ok | hotel | Check-in di Hotel | 6fff11d1-6674-4b73-8ed1-b43e209d55fc
+[2026-08-23T00:31:06.123Z] situational-regenerate-start | hotel | Check-in di Hotel
+[2026-08-23T00:31:14.421Z] situational-regenerate-ok | hotel | 6fff11d1-6674-4b73-8ed1-b43e209d55fc

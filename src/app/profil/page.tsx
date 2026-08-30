@@ -4,6 +4,7 @@ import Footer from "@/components/footer";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import ProfileManager from "./profile-manager";
 import MyReports from "./my-reports";
+import NotificationSettings from "@/components/notification-settings";
 
 export default async function ProfilPage() {
   if (!isSupabaseConfigured()) redirect("/dashboard");
@@ -52,6 +53,10 @@ export default async function ProfilPage() {
           provider={provider}
           hasPassword={hasPassword}
         />
+
+        <div className="mt-6">
+          <NotificationSettings />
+        </div>
 
         {/* Laporan masalah user */}
         <MyReports reports={reports ?? []} />

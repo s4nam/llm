@@ -4,6 +4,9 @@ import "./globals.css";
 import { BRAND } from "@/lib/brand";
 import CookieBanner from "@/components/cookie-banner";
 import FacebookPixel from "@/components/facebook-pixel";
+import PwaRegister from "@/components/pwa-register";
+import InstallPrompt from "@/components/install-prompt";
+import PwaPush from "@/components/pwa-push";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +41,20 @@ export const metadata: Metadata = {
     locale: "id_ID",
     siteName: BRAND.name,
   },
+  appleWebApp: {
+    capable: true,
+    title: BRAND.name,
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -58,6 +75,9 @@ export default function RootLayout({
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
         <FacebookPixel />
+        <PwaRegister />
+        <InstallPrompt />
+        <PwaPush />
       </body>
     </html>
   );

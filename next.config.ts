@@ -32,7 +32,7 @@ const cspHeaders = [
       "img-src 'self' data: https://api.qrserver.com https://www.facebook.com",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://*.midtrans.com https://app.snap.midtrans.com https://connect.facebook.net",
+      "connect-src 'self' https://*.supabase.co https://*.midtrans.com https://app.snap.midtrans.com https://connect.facebook.net https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com",
       "frame-src https://app.midtrans.com https://app.sandbox.midtrans.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -47,6 +47,20 @@ const nextConfig: NextConfig = {
     const headers =
       process.env.NODE_ENV === "production" ? [...securityHeaders, ...cspHeaders] : securityHeaders;
     return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/.well-known/assetlinks.json",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
+        ],
+      },
       {
         source: "/:path*",
         headers,

@@ -68,8 +68,8 @@ export const config = {
      * - api (route handler)
      * - _next/static (file statis)
      * - _next/image (optimasi gambar)
-     * - favicon.ico, sitemap.xml, robots.txt (metadata)
+     * - favicon.ico, sitemap.xml, robots.txt, manifest, sw.js (metadata/PWA)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|sw.js|.*\\.well-known).*)",
   ],
 };

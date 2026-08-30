@@ -114,6 +114,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
     label: "Sistem",
     items: [
       { label: "Pengaturan AI", href: "/admin/pengaturan-ai", icon: ICON.ai },
+      { label: "Notifikasi", href: "/admin/notifikasi", icon: ICON.monitoring },
       { label: "Keamanan", href: "/admin/keamanan", icon: ICON.keamanan },
       { label: "Panduan", href: "/admin/panduan", icon: ICON.panduan },
     ],
