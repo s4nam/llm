@@ -23,3 +23,11 @@
 [2026-08-22T08:56:50.781Z] situational-generate-ok | hotel | Check-in di Hotel | 6fff11d1-6674-4b73-8ed1-b43e209d55fc
 [2026-08-23T00:31:06.123Z] situational-regenerate-start | hotel | Check-in di Hotel
 [2026-08-23T00:31:14.421Z] situational-regenerate-ok | hotel | 6fff11d1-6674-4b73-8ed1-b43e209d55fc
+[2026-09-13T02:08:16.468Z] regenerate-start | writing | Writing
+[2026-09-13T02:08:23.748Z] single | writing | attempt=0 | gemini:gemini-3.5-flash | problems=
+[2026-09-13T02:08:24.160Z] regenerate-ok | writing | ee780af8-95e4-402c-b6df-0ea8f523b79c
+[2026-09-13T02:09:35.908Z] regenerate-start | listening | Listening
+[2026-09-13T02:09:51.951Z] chunk | listening | #1/2 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=6448 | head={ "title": "The Motor Theory of Speech Perception", "script": "Hello, everyone. Today we’re going to delve into an i
+[2026-09-13T02:10:07.556Z] chunk | listening | #2/2 | round=0 | attempt=0 | gemini:gemini-3.5-flash | len=7311 | head={ "title": "Listening Practice: The Motor Theory of Speech Perception", "script": "Good morning, everyone. Today, we
+[2026-09-13T02:10:08.153Z] set-ok | listening | items=2
+[2026-09-13T02:10:08.432Z] regenerate-ok | listening | 36a9fabb-5321-4d5c-8103-ca5202f15e6e

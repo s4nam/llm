@@ -37,9 +37,16 @@ export interface FreeLesson {
   /** 5 soal pilihan ganda */
   quiz: {
     question: string;
+    questionEN?: string;
+    questionID?: string;
     options: string[];
+    optionsEN?: string[];
+    optionsID?: string[];
     answerIndex: number;
     explanation: string;
+    explanationID?: string;
+    explanations?: string[];
+    explanationsID?: string[];
   }[];
   /** Latihan tambahan (opsional) — pola game per level CEFR */
   games?: LessonGame[];
@@ -55,9 +62,16 @@ export interface LessonDetail {
   sections: { heading: string; body: string }[];
   quiz: {
     question: string;
+    questionEN?: string;
+    questionID?: string;
     options: string[];
+    optionsEN?: string[];
+    optionsID?: string[];
     answerIndex: number;
     explanation: string;
+    explanationID?: string;
+    explanations?: string[];
+    explanationsID?: string[];
   }[];
   is_free: boolean;
   /** Latihan tambahan (opsional) — pola game per level CEFR */

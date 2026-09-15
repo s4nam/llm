@@ -7,9 +7,15 @@
 
 export interface QuizItem {
   question: string;
+  questionEN?: string;
   options: string[];
+  optionsEN?: string[];
+  optionsID?: string[];
   answerIndex: number;
   explanation: string;
+  explanationID?: string;
+  explanations?: string[];
+  explanationsID?: string[];
 }
 
 export interface LessonGameLike {
@@ -95,6 +101,19 @@ function validateQuizItem(
   }
   if (!isNonEmpty(item.explanation)) {
     problems.push(`${scope} soal #${index + 1} tidak punya penjelasan.`);
+  }
+  // Validasi opsional: explanations jika ada harus 4 item
+  if (item.explanations && !Array.isArray(item.explanations)) {
+    problems.push(`${scope} soal #${index + 1} "explanations" harus berupa array.`);
+  } else if (Array.isArray(item.explanations) && item.explanations.length !== 4) {
+    problems.push(`${scope} soal #${index + 1} "explanations" harus punya tepat 4 item.`);
+  }
+  // Validasi opsional: opsi secondary harus sesuai panjang jika ada
+  if (item.optionsEN && item.optionsEN.length !== 4) {
+    problems.push(`${scope} soal #${index + 1} "optionsEN" harus punya tepat 4 item.`);
+  }
+  if (item.optionsID && item.optionsID.length !== 4) {
+    problems.push(`${scope} soal #${index + 1} "optionsID" harus punya tepat 4 item.`);
   }
 }
 

@@ -321,47 +321,193 @@ export default function LessonPlayer({
         </p>
 
         <div className="mt-5 flex flex-col gap-6">
-          {lesson.quiz.map((q, qIndex) => (
-            <div key={qIndex}>
-              <p className="font-medium text-slate-800">
-                {qIndex + 1}. {q.question}
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
-                {q.options.map((_, oIndex) => {
-                  // oIndex = index TAMPILAN; order = index asli dalam urutan tampilan.
-                  const order = optionOrder[qIndex];
-                  const realIndex = order ? order[oIndex] : oIndex;
-                  const option = q.options[realIndex];
-                  const isSelected = answers[qIndex] === realIndex;
-                  const isCorrect = submitted && realIndex === q.answerIndex;
-                  const isWrong = submitted && isSelected && realIndex !== q.answerIndex;
-                  let cls = "border-slate-200 bg-white hover:border-brand hover:bg-brand-light/40";
-                  if (isCorrect) cls = "border-success bg-success/10";
-                  else if (isWrong) cls = "border-danger bg-danger/10";
-                  else if (isSelected) cls = "border-brand bg-brand-light/40";
+          {lesson.quiz.map((q, qIndex) => {
+            const answered = answers[qIndex];
+            const isCorrectQ = submitted && answered === q.answerIndex;
+            const isWrongQ = submitted && answered !== null && answered !== q.answerIndex;
+            // Bilingual text: tampilkan ID di bar abu, EN di bawah spt referensi
+            const idText = lesson.level === "B1" || lesson.level === "B2" ? q.questionID : q.question;
+            const enText = lesson.level === "B1" || lesson.level === "B2" ? q.question : q.questionEN;
+            // Tentukan EN sentence untuk fill-blank highlight (jika ada)
+            const enSentence = enText || (q.questionEN ? q.questionEN : undefined);
+            // Jika ada blank pattern di enSentence atau question, highlight jawaban
+            const renderEnSentence = () => {
+              if (!enSentence) return null;
+              // Jika submitted, highlight jawaban yang benar di kalimat EN
+              if (submitted) {
+                const correctOpt = q.options[q.answerIndex];
+                // Untuk vocab/reading yang enText adalah terjemahan, cukup tampilkan apa adanya
+                // Untuk grammar fill-blank, tampilkan correctOpt dengan underline hijau/merah
+                if (isCorrectQ) {
                   return (
-                    <button
-                      key={realIndex}
-                      type="button"
-                      onClick={() => choose(oIndex, qIndex)}
-                      disabled={submitted}
-                      className={`rounded-lg border px-4 py-3 text-left text-sm transition ${cls} disabled:cursor-default`}
-                    >
-                      {option}
-                    </button>
+                    <p className="text-[15px] leading-7 text-slate-800">
+                      <span className="border-b-2 border-emerald-500 font-semibold text-emerald-600">
+                        {correctOpt}
+                      </span>{" "}
+                      <span>{enSentence.replace(/_{2,}|…+|\.?\s*_{2,}\s*/g, "").trim()}</span>
+                    </p>
                   );
-                })}
+                }
+                if (isWrongQ) {
+                  const chosenOpt = answered !== null ? q.options[answered] : "";
+                  return (
+                    <p className="text-[15px] leading-7 text-slate-800">
+                      <span className="border-b-2 border-red-400 font-semibold text-red-600">
+                        {chosenOpt}
+                      </span>{" "}
+                      <span>{enSentence.replace(/_{2,}|…+|\.?\s*_{2,}\s*/g, "").trim()}</span>
+                    </p>
+                  );
+                }
+              }
+              // Belum submit: tampilkan blank + kalimat
+              if (enSentence.includes("___") || enSentence.includes("..........")) {
+                const parts = enSentence.split(/_{3,}|…+|_{2,}/);
+                return (
+                  <p className="text-[15px] leading-7 text-slate-800">
+                    <span className="mr-2 inline-block w-20 border-b border-slate-400 text-center text-slate-300">
+                      ..........
+                    </span>
+                    <span>{parts.join(" ").trim() || enSentence}</span>
+                  </p>
+                );
+              }
+              return <p className="text-[15px] leading-7 text-slate-800">{enSentence}</p>;
+            };
+
+            return (
+              <div
+                key={qIndex}
+                className={`rounded-2xl border p-4 sm:p-5 transition ${
+                  !submitted
+                    ? "border-slate-200 bg-white"
+                    : isCorrectQ
+                      ? "border-emerald-200 bg-emerald-50/60"
+                      : "border-red-200 bg-red-50/60"
+                }`}
+              >
+                <p className="text-xs font-medium text-slate-400">Soal {qIndex + 1}</p>
+
+                {/* ID bar */}
+                {idText && (
+                  <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 border-l-[3px] border-slate-300">
+                    <span className="mr-1 text-xs font-bold text-slate-400">ID</span>
+                    <span className="text-sm italic text-slate-600">{idText}</span>
+                  </div>
+                )}
+
+                {/* EN sentence */}
+                <div className="mt-3">{renderEnSentence() || <p className="text-[15px] font-medium text-slate-800">{q.question}</p>}</div>
+
+                {/* Options 2x2 grid seperti referensi */}
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {q.options.map((_, oIndex) => {
+                    const order = optionOrder[qIndex];
+                    const realIndex = order ? order[oIndex] : oIndex;
+                    const label = String.fromCharCode(65 + oIndex);
+                    const primary = q.options[realIndex];
+                    const secondary =
+                      lesson.level === "A1" || lesson.level === "A2" ? q.optionsEN?.[realIndex] : q.optionsID?.[realIndex];
+                    const isSelected = answered === realIndex;
+                    const isCorrect = submitted && realIndex === q.answerIndex;
+                    const isWrong = submitted && isSelected && realIndex !== q.answerIndex;
+                    let cls = "border-slate-200 bg-white hover:border-slate-300";
+                    if (submitted) {
+                      if (isCorrect) cls = "border-emerald-500 bg-emerald-500 text-white";
+                      else if (isWrong) cls = "border-red-500 bg-red-500 text-white";
+                      else cls = "border-slate-200 bg-white text-slate-700 opacity-90";
+                    } else if (isSelected) {
+                      cls = "border-brand bg-brand-light/40 text-slate-900";
+                    }
+                    return (
+                      <button
+                        key={realIndex}
+                        type="button"
+                        onClick={() => choose(oIndex, qIndex)}
+                        disabled={submitted}
+                        className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-left text-sm font-medium transition disabled:cursor-default ${cls}`}
+                      >
+                        <span className={`text-xs font-bold ${submitted && (isCorrect || isWrong) ? "text-white" : "text-slate-400"}`}>
+                          {label}.
+                        </span>
+                        <span className="flex-1">
+                          {primary}
+                          {secondary && (
+                            <span className={`ml-1 text-xs ${submitted && (isCorrect || isWrong) ? "text-white/80" : "text-slate-400"}`}>
+                              — {secondary}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Feedback card seperti referensi */}
+                {submitted && (
+                  <div className={`mt-4 rounded-xl border p-3 ${isCorrectQ ? "border-emerald-200 bg-white" : "border-red-200 bg-white"}`}>
+                    <p className={`flex items-center gap-1.5 text-sm font-bold ${isCorrectQ ? "text-emerald-600" : "text-red-600"}`}>
+                      {isCorrectQ ? "✅ Benar!" : `❌ Jawaban yang benar: "${q.options[q.answerIndex]}"`}
+                    </p>
+
+                    {/* White inner card */}
+                    <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-sm leading-6 text-slate-700">
+                        <span className="mr-1">💡</span>
+                        {q.explanation}
+                        {q.explanationID && <span className="text-slate-500"> — {q.explanationID}</span>}
+                      </p>
+                      {q.explanation && (
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                          <span className="mr-1">📌</span>
+                          <span className="font-semibold">Tips:</span> {q.explanation}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Kapan pilihan lain bisa benar — untuk soal salah, tampilkan semua distractor */}
+                    {isWrongQ && q.explanations && (
+                      <div className="mt-3">
+                        <p className="flex items-center gap-1 text-xs font-semibold text-slate-500">
+                          <span>📖</span> Kapan pilihan lain bisa benar:
+                        </p>
+                        <div className="mt-2 flex flex-col gap-2">
+                          {q.explanations.map((exp, eIdx) => {
+                            if (eIdx === q.answerIndex) return null;
+                            const optLabel = q.options[eIdx];
+                            const expId = q.explanationsID?.[eIdx];
+                            return (
+                              <div key={eIdx} className="rounded-lg bg-white border border-slate-100 px-3 py-2">
+                                <p className="text-sm font-semibold text-[#2563eb]">
+                                  {optLabel} — {q.optionsEN?.[eIdx] || q.optionsID?.[eIdx] || optLabel}
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-slate-600">✓ {exp}</p>
+                                {expId && <p className="text-xs text-slate-400">{expId}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Jika benar, tetap tampilkan 1 penjelasan ringkas */}
+                    {isCorrectQ && q.explanations && (
+                      <div className="mt-2 rounded-lg bg-white border border-slate-100 px-3 py-2">
+                        <p className="text-xs leading-5 text-slate-600">{q.explanations[q.answerIndex]}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Fallback lama jika tidak ada explanations (pelajaran lama tanpa bilingual) */}
+                {submitted && !q.explanations && !isCorrectQ && (
+                  <p className="mt-3 text-sm text-slate-600">
+                    <span className="font-semibold">{result[qIndex] ? "✓ Benar." : "✗ Kurang tepat."}</span> {q.explanation}
+                  </p>
+                )}
               </div>
-              {submitted && (
-                <p className={`mt-2 text-justify text-sm ${result[qIndex] ? "text-success" : "text-slate-600"}`}>
-                  <span className="font-semibold">
-                    {result[qIndex] ? "✓ Benar." : "✗ Kurang tepat."}
-                  </span>{" "}
-                  {q.explanation}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {!submitted && (
