@@ -121,28 +121,47 @@ export default async function LessonPage({
   }
 
   // Member/free: ambil konten lengkap (RLS mengizinkan; anonim hanya is_free)
-  const { data: lesson } = await supabase
-    .from("lessons")
-    .select(
-      "id, level_code, category, title, slug, intro, sections, quiz, is_free",
-    )
-    .eq("slug", slug)
-    .eq("level_code", code.toUpperCase())
-    .eq("status", "published")
-    .single();
+  // Fallback jika kolom explanation_media belum ada (migration 030 belum jalan)
+  let lesson: Record<string, unknown> | null = null;
+  {
+    const { data, error } = await supabase
+      .from("lessons")
+      .select(
+        "id, level_code, category, title, slug, intro, sections, quiz, is_free, explanation_media, games",
+      )
+      .eq("slug", slug)
+      .eq("level_code", code.toUpperCase())
+      .eq("status", "published")
+      .single();
+    if (!error && data) {
+      lesson = data as Record<string, unknown>;
+    } else {
+      // Jika error karena kolom belum ada, coba tanpa explanation_media
+      const { data: fallback } = await supabase
+        .from("lessons")
+        .select("id, level_code, category, title, slug, intro, sections, quiz, is_free, games")
+        .eq("slug", slug)
+        .eq("level_code", code.toUpperCase())
+        .eq("status", "published")
+        .single();
+      lesson = fallback as Record<string, unknown> | null;
+    }
+  }
 
   if (!lesson) notFound();
 
   const typed: LessonDetail = {
-    id: lesson.id,
-    level: lesson.level_code,
-    category: lesson.category,
-    title: lesson.title,
-    slug: lesson.slug,
-    intro: lesson.intro ?? "",
-    sections: lesson.sections,
-    quiz: lesson.quiz,
-    is_free: lesson.is_free,
+    id: lesson.id as string,
+    level: lesson.level_code as LessonDetail["level"],
+    category: lesson.category as LessonDetail["category"],
+    title: lesson.title as string,
+    slug: lesson.slug as string,
+    intro: (lesson.intro as string) ?? "",
+    sections: lesson.sections as LessonDetail["sections"],
+    quiz: lesson.quiz as LessonDetail["quiz"],
+    is_free: lesson.is_free as boolean,
+    games: lesson.games as LessonDetail["games"],
+    media: (lesson.explanation_media as LessonDetail["media"]) ?? { type: "classic" },
   };
 
   return (
@@ -157,9 +176,9 @@ export default async function LessonPage({
         </Link>
 
         <p className="mt-6 text-xs font-medium uppercase tracking-wide text-brand">
-          {lesson.level_code} • {CATEGORY_LABELS[lesson.category as keyof typeof CATEGORY_LABELS]}
+          {String(lesson.level_code)} • {CATEGORY_LABELS[String(lesson.category) as keyof typeof CATEGORY_LABELS] ?? String(lesson.category)}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-slate-900">{lesson.title}</h1>
+        <h1 className="mt-1 text-3xl font-bold text-slate-900">{String(lesson.title)}</h1>
 
         <LessonPlayer lesson={typed} isMember={!isAnon && hasAccess} />
       </main>

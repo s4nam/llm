@@ -6,6 +6,7 @@ import type { LessonDetail } from "@/lib/types";
 import LessonGames from "@/components/lesson-games";
 import SaveToStudySet from "@/components/save-to-study-set";
 import ReportProblem from "@/components/report-problem";
+import { youtubeEmbedUrl } from "@/lib/youtube";
 
 const FREE_STORAGE_KEY = "em_free_progress";
 
@@ -190,50 +191,92 @@ export default function LessonPlayer({
     setWritingQuota((q) => (q ? { ...q, used: q.used + 1 } : q));
   }
 
+  const mediaType = lesson.media?.type ?? "classic";
+  const youtubeEmbed = mediaType === "youtube" && lesson.media?.youtube_url ? youtubeEmbedUrl(lesson.media.youtube_url) : null;
+  const imageUrl = mediaType === "image" ? lesson.media?.image_url : null;
+  const [lightbox, setLightbox] = useState(false);
+
   return (
     <div className="mt-6 flex flex-col gap-6">
-      {/* Intro */}
-      <div className="rounded-2xl border border-slate-200 bg-surface p-6">
-        <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
-      </div>
-
-      {/* Sections */}
-      {lesson.sections.map((section, sIdx) => (
-        <section key={section.heading} className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-slate-900">{section.heading}</h2>
-          {lesson.category === "listening" && sIdx === 0 ? (
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => speak(section.body, `listening-${lesson.id}`)}
-                disabled={!ttsEnabled}
-                className="mb-3 inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
-              >
-                {speakingId === `listening-${lesson.id}` ? "⏸ Berhenti" : "🔊 Dengarkan"}
-              </button>
-              {!ttsEnabled && (
-                <p className="mb-2 text-sm text-slate-500">
-                  Perangkat Anda tidak mendukung suara. Baca transkrip di bawah ini.
-                </p>
-              )}
-              <div className="whitespace-pre-line rounded-xl bg-surface p-4 text-justify leading-7 text-slate-700">
-                {section.body}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
-              {lesson.category === "vocabulary" && section.heading.toLowerCase().includes("kosakata") ? (
-                <>
-                  <VocabularyList body={section.body} onSpeak={speak} speakingId={speakingId} />
-                  {isMember && <SaveToStudySet word={lesson.title} />}
-                </>
-              ) : (
-                section.body
-              )}
+      {/* Media Penjelasan Dinamis */}
+      {mediaType === "youtube" && youtubeEmbed ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-black">
+          <div className="aspect-video w-full">
+            <iframe
+              src={youtubeEmbed}
+              title={lesson.title}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </section>
+      ) : mediaType === "image" && imageUrl ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={lesson.title}
+            className="max-h-[480px] w-full cursor-zoom-in rounded-xl object-contain"
+            onClick={() => setLightbox(true)}
+          />
+          <p className="mt-2 text-center text-xs text-slate-400">Klik gambar untuk memperbesar</p>
+          {lightbox && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+              onClick={() => setLightbox(false)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt={lesson.title} className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain" />
             </div>
           )}
         </section>
-      ))}
+      ) : (
+        <>
+          {/* Classic: Intro */}
+          <div className="rounded-2xl border border-slate-200 bg-surface p-6">
+            <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
+          </div>
+
+          {/* Classic: Sections */}
+          {lesson.sections.map((section, sIdx) => (
+            <section key={section.heading} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="text-xl font-semibold text-slate-900">{section.heading}</h2>
+              {lesson.category === "listening" && sIdx === 0 ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => speak(section.body, `listening-${lesson.id}`)}
+                    disabled={!ttsEnabled}
+                    className="mb-3 inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+                  >
+                    {speakingId === `listening-${lesson.id}` ? "⏸ Berhenti" : "🔊 Dengarkan"}
+                  </button>
+                  {!ttsEnabled && (
+                    <p className="mb-2 text-sm text-slate-500">
+                      Perangkat Anda tidak mendukung suara. Baca transkrip di bawah ini.
+                    </p>
+                  )}
+                  <div className="whitespace-pre-line rounded-xl bg-surface p-4 text-justify leading-7 text-slate-700">
+                    {section.body}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
+                  {lesson.category === "vocabulary" && section.heading.toLowerCase().includes("kosakata") ? (
+                    <>
+                      <VocabularyList body={section.body} onSpeak={speak} speakingId={speakingId} />
+                      {isMember && <SaveToStudySet word={lesson.title} />}
+                    </>
+                  ) : (
+                    section.body
+                  )}
+                </div>
+              )}
+            </section>
+          ))}
+        </>
+      )}
 
       {/* Writing practice */}
       {lesson.category === "writing" && (
@@ -443,67 +486,163 @@ export default function LessonPlayer({
                   })}
                 </div>
 
-                {/* Feedback card seperti referensi */}
+                {/* Feedback card seperti referensi SS "jawaban salah dan penjelasan semua pilihan" */}
                 {submitted && (
-                  <div className={`mt-4 rounded-xl border p-3 ${isCorrectQ ? "border-emerald-200 bg-white" : "border-red-200 bg-white"}`}>
+                  <div className={`mt-4 rounded-xl border p-3 sm:p-4 ${isCorrectQ ? "border-emerald-200 bg-emerald-50/40" : "border-red-200 bg-red-50/40"}`}>
                     <p className={`flex items-center gap-1.5 text-sm font-bold ${isCorrectQ ? "text-emerald-600" : "text-red-600"}`}>
                       {isCorrectQ ? "✅ Benar!" : `❌ Jawaban yang benar: "${q.options[q.answerIndex]}"`}
                     </p>
 
-                    {/* White inner card */}
-                    <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                      <p className="text-sm leading-6 text-slate-700">
-                        <span className="mr-1">💡</span>
+                    {/* Explanation */}
+                    <div className="mt-2.5 rounded-xl border border-slate-100 bg-white p-3 sm:p-3.5">
+                      <p className="text-sm font-bold text-slate-800">Explanation:</p>
+                      <div className="mt-1.5 text-sm leading-6 text-slate-700 whitespace-pre-line">
                         {q.explanation}
                         {q.explanationID && <span className="text-slate-500"> — {q.explanationID}</span>}
-                      </p>
-                      {q.explanation && (
-                        <p className="mt-2 text-sm leading-6 text-slate-700">
-                          <span className="mr-1">📌</span>
-                          <span className="font-semibold">Tips:</span> {q.explanation}
-                        </p>
-                      )}
+                      </div>
+                      {(() => {
+                        const tip = q.explanations?.[q.answerIndex];
+                        const tipId = q.explanationsID?.[q.answerIndex];
+                        // Jangan duplikasi jika isinya sama persis dengan q.explanation
+                        const cleanTip = tip?.replace(/^✓\s*Benar!\s*/i, "").replace(/^✓\s*/i, "").trim();
+                        const isDuplicate = cleanTip && cleanTip === q.explanation.trim();
+                        if ((!cleanTip || isDuplicate) && !tipId) return null;
+                        if (!cleanTip && !tipId) return null;
+                        return (
+                          <p className="mt-2 text-sm leading-6 text-slate-700">
+                            <span className="mr-1">📌</span>
+                            <span className="font-semibold">Tips:</span>{" "}
+                            {cleanTip && !isDuplicate ? cleanTip : q.explanations?.[q.answerIndex]?.replace(/^✓\s*/i, "") ?? ""}
+                            {tipId && <span className="text-slate-500"> — {tipId}</span>}
+                          </p>
+                        );
+                      })()}
                     </div>
 
-                    {/* Kapan pilihan lain bisa benar — untuk soal salah, tampilkan semua distractor */}
-                    {isWrongQ && q.explanations && (
+                    {/* Wrong Answer Explanations */}
+                    {isWrongQ && (
                       <div className="mt-3">
-                        <p className="flex items-center gap-1 text-xs font-semibold text-slate-500">
-                          <span>📖</span> Kapan pilihan lain bisa benar:
-                        </p>
+                        <p className="text-sm font-bold text-slate-800">Wrong Answer Explanations:</p>
                         <div className="mt-2 flex flex-col gap-2">
-                          {q.explanations.map((exp, eIdx) => {
-                            if (eIdx === q.answerIndex) return null;
-                            const optLabel = q.options[eIdx];
-                            const expId = q.explanationsID?.[eIdx];
-                            return (
-                              <div key={eIdx} className="rounded-lg bg-white border border-slate-100 px-3 py-2">
-                                <p className="text-sm font-semibold text-[#2563eb]">
-                                  {optLabel} — {q.optionsEN?.[eIdx] || q.optionsID?.[eIdx] || optLabel}
-                                </p>
-                                <p className="mt-1 text-xs leading-5 text-slate-600">✓ {exp}</p>
-                                {expId && <p className="text-xs text-slate-400">{expId}</p>}
-                              </div>
-                            );
-                          })}
+                          {(q.explanations
+                            ? q.explanations.map((exp, eIdx) => {
+                                if (eIdx === q.answerIndex) return null;
+                                const optLabel = q.options[eIdx];
+                                const secondary = q.optionsEN?.[eIdx] || q.optionsID?.[eIdx];
+                                const expId = q.explanationsID?.[eIdx];
+                                const cleanExp = exp.replace(/^✓\s*/i, "").trim();
+                                // Bangun contoh kalimat untuk opsi ini (seperti referensi: "✓ When did Budi read the book last night?")
+                                const correctOpt = q.options[q.answerIndex];
+                                const rawEn = (enSentence || q.questionEN || q.question || "") as string;
+                                let example: string | null = null;
+                                if (rawEn) {
+                                  if (/_{2,}|…+/.test(rawEn)) {
+                                    let ex = rawEn.replace(/_{2,}|…+/, optLabel).replace(/\s+/g, " ").trim();
+                                    const quoted = ex.match(/['"`]([^'"`]*?)['"`]/);
+                                    if (quoted && quoted[1].includes(optLabel)) ex = quoted[1].trim();
+                                    if (ex.split(" ").length >= 2) example = ex;
+                                  } else if (!/Apa arti|Apa yang|Berapa|Siapa|Pilih kata|Choose the correct/.test(rawEn)) {
+                                    let clean = rawEn.replace(/\.{3,}/g, "").trim();
+                                    if (clean.toLowerCase().startsWith(correctOpt.toLowerCase())) {
+                                      clean = clean.slice(correctOpt.length).trim().replace(/^[\s—–-]+/, "");
+                                    }
+                                    if (!clean.toLowerCase().startsWith(optLabel.toLowerCase())) {
+                                      let ex = `${optLabel} ${clean}`.replace(/\s+/g, " ").trim();
+                                      if (rawEn.trim().endsWith("?") && !ex.endsWith("?")) ex += "?";
+                                      ex = ex.replace(/\?\?/g, "?");
+                                      if (ex.split(" ").length >= 3) example = ex;
+                                    } else {
+                                      example = clean;
+                                    }
+                                  }
+                                }
+                                if (!example) {
+                                  const quotedFallback = (q.questionEN || q.question || "").match(/['"`]([^'"`]+)['"`]/);
+                                  if (quotedFallback) {
+                                    let fb = quotedFallback[1].replace(/_{2,}|…+/g, optLabel).trim();
+                                    if (fb) example = fb;
+                                  }
+                                  if (!example) example = `Contoh: "${optLabel}" → kalimat dengan "${optLabel}"`;
+                                }
+                                const label = String.fromCharCode(65 + eIdx);
+                                const hasExample = example && cleanExp.includes(example);
+                                return (
+                                  <div key={eIdx} className="rounded-xl bg-white border border-slate-100 px-3.5 py-2.5">
+                                    <p className="text-sm font-bold text-slate-800">{label}:</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-700">"{optLabel}" {cleanExp}</p>
+                                    {expId && <p className="mt-1 text-xs leading-4 text-slate-400">{expId.replace(/^✓\s*/i, "")}</p>}
+                                    {example && !hasExample && <p className="mt-1 text-sm leading-6 text-slate-700">"{example}"</p>}
+                                  </div>
+                                );
+                              })
+                            : q.options.map((opt, eIdx) => {
+                                if (eIdx === q.answerIndex) return null;
+                                const secondary = q.optionsEN?.[eIdx] || q.optionsID?.[eIdx];
+                                const correctOpt = q.options[q.answerIndex];
+                                const rawEn = (enSentence || q.questionEN || q.question || "") as string;
+                                let example: string | null = null;
+                                if (rawEn) {
+                                  if (/_{2,}|…+/.test(rawEn)) {
+                                    let ex = rawEn.replace(/_{2,}|…+/, opt).replace(/\s+/g, " ").trim();
+                                    const quoted = ex.match(/['"`]([^'"`]*?)['"`]/);
+                                    if (quoted && quoted[1].includes(opt)) ex = quoted[1].trim();
+                                    if (ex.split(" ").length >= 2) example = ex;
+                                  } else if (!/Apa arti|Apa yang|Berapa|Siapa|Pilih kata|Choose the correct/.test(rawEn)) {
+                                    let clean = rawEn.replace(/\.{3,}/g, "").trim();
+                                    if (clean.toLowerCase().startsWith(correctOpt.toLowerCase())) {
+                                      clean = clean.slice(correctOpt.length).trim().replace(/^[\s—–-]+/, "");
+                                    }
+                                    if (!clean.toLowerCase().startsWith(opt.toLowerCase())) {
+                                      let ex = `${opt} ${clean}`.replace(/\s+/g, " ").trim();
+                                      if (rawEn.trim().endsWith("?") && !ex.endsWith("?")) ex += "?";
+                                      ex = ex.replace(/\?\?/g, "?");
+                                      if (ex.split(" ").length >= 3) example = ex;
+                                    } else {
+                                      example = clean;
+                                    }
+                                  }
+                                }
+                                if (!example) {
+                                  const quotedFallback = (q.questionEN || q.question || "").match(/['"`]([^'"`]+)['"`]/);
+                                  if (quotedFallback) {
+                                    let fb = quotedFallback[1].replace(/_{2,}|…+/g, opt).trim();
+                                    if (fb) example = fb;
+                                  }
+                                }
+                                const getShortDesc = (o: string) => {
+                                  const v = o.toLowerCase().trim();
+                                  if (v === "studying") return "adalah Verb-ing. Untuk menggunakan studying, diperlukan to be:";
+                                  if (v === "studies") return 'digunakan untuk He/She/It. Untuk They, gunakan "study".';
+                                  if (v === "is" || v === "is studying" || v.includes("is studying")) return 'menggunakan "are", bukan "is". Selain itu, setelah to be untuk aktivitas yang sedang berlangsung, gunakan Verb-ing:';
+                                  if (v === "when did") return "menanyakan WAKTU (kapan, secara umum)";
+                                  if (v === "what did") return "menanyakan OBJEK / APA yang dilakukan";
+                                  if (v === "how did") return "menanyakan CARA / BAGAIMANA";
+                                  if (v === "where did") return "menanyakan TEMPAT";
+                                  if (v === "why did") return "menanyakan ALASAN";
+                                  if (v === "who did") return "menanyakan ORANG";
+                                  if (v === "lives") return "untuk subjek he/she/it.";
+                                  if (v === "live") return "untuk subjek I/you/we/they.";
+                                  if (v === "is") return "untuk subjek he/she/it.";
+                                  if (v === "are") return "untuk subjek you/we/they.";
+                                  if (v === "am") return "untuk subjek I.";
+                                  return "untuk konteks berbeda.";
+                                };
+                                const shortDesc = getShortDesc(opt);
+                                const label = String.fromCharCode(65 + eIdx);
+                                // Jika shortDesc sudah mengandung titik, jangan tambah titik lagi
+                                const desc = shortDesc.endsWith(".") || shortDesc.endsWith(":") ? shortDesc : `${shortDesc}.`;
+                                return (
+                                  <div key={eIdx} className="rounded-xl bg-white border border-slate-100 px-3.5 py-2.5">
+                                    <p className="text-sm font-bold text-slate-800">{label}:</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-700">"{opt}" {desc}</p>
+                                    {example && <p className="mt-1 text-sm leading-6 text-slate-700">"{example}"</p>}
+                                  </div>
+                                );
+                              }))}
                         </div>
                       </div>
                     )}
-
-                    {/* Jika benar, tetap tampilkan 1 penjelasan ringkas */}
-                    {isCorrectQ && q.explanations && (
-                      <div className="mt-2 rounded-lg bg-white border border-slate-100 px-3 py-2">
-                        <p className="text-xs leading-5 text-slate-600">{q.explanations[q.answerIndex]}</p>
-                      </div>
-                    )}
                   </div>
-                )}
-
-                {/* Fallback lama jika tidak ada explanations (pelajaran lama tanpa bilingual) */}
-                {submitted && !q.explanations && !isCorrectQ && (
-                  <p className="mt-3 text-sm text-slate-600">
-                    <span className="font-semibold">{result[qIndex] ? "✓ Benar." : "✗ Kurang tepat."}</span> {q.explanation}
-                  </p>
                 )}
               </div>
             );

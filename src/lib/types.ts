@@ -52,6 +52,15 @@ export interface FreeLesson {
   games?: LessonGame[];
 }
 
+export type LessonMediaType = "classic" | "youtube" | "image";
+
+export interface LessonMedia {
+  type: LessonMediaType;
+  youtube_url?: string | null;
+  image_url?: string | null;
+  image_path?: string | null;
+}
+
 export interface LessonDetail {
   id: string;
   level: CefrLevel;
@@ -76,6 +85,8 @@ export interface LessonDetail {
   is_free: boolean;
   /** Latihan tambahan (opsional) — pola game per level CEFR */
   games?: LessonGame[];
+  /** Media penjelasan dinamis: classic (teks) | youtube | image */
+  media?: LessonMedia | null;
 }
 
 export interface UserProgressRow {

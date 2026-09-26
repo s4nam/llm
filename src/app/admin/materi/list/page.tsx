@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin-guard";
 import AdminHeader from "../../admin-header";
 import { CATEGORY_LABELS } from "@/lib/types";
+import DownloadExcelButton from "./download-excel-button";
 
 export const metadata: Metadata = {
   title: "Daftar Materi",
@@ -33,12 +34,24 @@ export default async function MateriListPage() {
               Pratinjau, setujui, atau perbaiki materi yang dibuat AI.
             </p>
           </div>
-          <Link
-            href="/admin/materi"
-            className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-          >
-            + Generate Baru
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <DownloadExcelButton
+              lessons={lessons.map((l: Record<string, unknown>) => ({
+                title: String(l.title ?? ""),
+                level_code: String(l.level_code ?? ""),
+                status: String(l.status ?? ""),
+                category: l.category ? String(l.category) : undefined,
+                updated_at: l.updated_at ? String(l.updated_at) : undefined,
+                is_free: Boolean(l.is_free),
+              }))}
+            />
+            <Link
+              href="/admin/materi"
+              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              + Generate Baru
+            </Link>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-3">

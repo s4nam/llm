@@ -58,6 +58,24 @@ Lesson structure:
       ? "Bilingual: question & options in Bahasa Indonesia. Add 'questionEN' = English source word/phrase, 'optionsEN' = English source text for each option. Add 'explanations' array (one explanation per option, Bahasa Indonesia, explaining why each option is right or wrong)."
       : "Bilingual: question & options in English. Add 'optionsID' = Indonesian translation for each option, 'questionID' = Indonesian question, 'explanationID' = Indonesian explanation, 'explanationsID' = array of Indonesian explanations (one per option, explaining why each option is right or wrong).";
 
+  const explanationFormat = `
+EXPLANATION FORMAT — WAJIB (Bahasa Indonesia, simpel, seperti referensi UI):
+- "explanation": untuk jawaban BENAR, 2-3 kalimat pendek. Contoh:
+  "They adalah subject plural. Dalam Simple Present, They menggunakan Verb 1. Maka jawabannya adalah "study"."
+  Selalu akhiri dengan: Maka jawabannya adalah "<jawaban benar>".
+- "explanations"[4]: tiap index = penjelasan untuk opsi tersebut (0-3). 
+  Untuk opsi BENAR (index == answerIndex): 1 kalimat kenapa benar, mis: ""study" benar untuk They."
+  Untuk opsi SALAH: format WAJIB: "<opsi>" <penjelasan kenapa salah>. Beri contoh kalimat benar dalam kutip jika relevan.
+  Contoh untuk soal "They ___ English." opsi ["studying","studies","is","study"] answerIndex 3:
+    0: "\\"studying\\" adalah Verb-ing. Untuk menggunakan studying, diperlukan to be: \\"They are studying English.\\""
+    1: "\\"studies\\" digunakan untuk He/She/It. Untuk They, gunakan \\"study\\"."
+    2: "\\"is\\" salah. \\"They\\" menggunakan \\"are\\", bukan \\"is\\". Selain itu, setelah to be untuk aktivitas yang sedang berlangsung, gunakan Verb-ing: \\"They are studying.\\""
+    3: "\\"study\\" benar untuk subjek They (plural) di Simple Present."
+  Untuk grammar When/What/How did: 
+    0: "\\"When did\\" → menanyakan WAKTU (kapan, secara umum). Contoh: \\"When did Budi read the book last night?\\""
+  Jangan buat penjelasan bertele-tele. Maks 2 kalimat per opsi + 1 contoh kutip jika perlu.
+`;
+
   // Tipe game sesuai level CEFR (opsional — boleh kosong).
   const gamesInstruction = buildGamesInstruction(params.level);
 
@@ -71,6 +89,7 @@ Topic to teach: "${params.topic}"
 CRITICAL — CEFR LEVEL FIDELITY: All content MUST strictly match CEFR level ${params.level}. Do NOT use vocabulary, grammar, or reading complexity above or below this level. A ${params.level} student must be able to understand it comfortably, and an advanced student must not find it too easy.
 
 Language style: ${bilingual}
+${explanationFormat}
 Write in a warm, simple, encouraging tone for beginners.
 
 ${gamesInstruction}
@@ -83,7 +102,7 @@ OUTPUT FORMAT: Return ONLY valid JSON with this exact shape (no markdown, no cod
   "quiz": [{ "question": string, "questionEN?": string, "options": [string,string,string,string], "optionsEN?": [string,string,string,string], "optionsID?": [string,string,string,string], "answerIndex": number, "explanation": string, "explanationID?": string, "explanations": [string,string,string,string], "explanationsID?": [string,string,string,string] }],
   "games": [ ... ]
 }
-The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. "explanations" must have exactly 4 strings — one per option — explaining why each option is correct or incorrect. For A1/A2: question & options in Indonesian with questionEN/optionsEN. For B1/B2: question & options in English with optionsID/explanationsID. Do NOT create duplicate questions — every question must be unique and different from the others in the quiz.
+The "sections" array must have exactly 3 items. The "quiz" array must have exactly 5 items. Every "answerIndex" must be an integer from 0 to 3. "explanations" must have exactly 4 strings — one per option — WAJIB mengikuti EXPLANATION FORMAT di atas (untuk opsi salah: "<opsi>" + penjelasan + contoh kutip; untuk opsi benar: 1 kalimat). Untuk A1/A2: question & options dalam Bahasa Indonesia dengan questionEN/optionsEN. Untuk B1/B2: question & options dalam English dengan optionsID/explanationsID. "explanation" WAJIB 2-3 kalimat dan diakhiri dengan Maka jawabannya adalah "<jawaban>". Do NOT create duplicate questions — every question must be unique and different from the others in the quiz.
 The "games" array is OPTIONAL — if the level does not require games for this category, return an EMPTY array []. If you include games, follow the exact structures described above.`;
 }
 
