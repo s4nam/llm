@@ -9,6 +9,7 @@ type LessonRow = {
   category?: string;
   updated_at?: string;
   is_free?: boolean;
+  question_count?: number;
 };
 
 export default function DownloadExcelButton({ lessons }: { lessons: LessonRow[] }) {
@@ -22,6 +23,7 @@ export default function DownloadExcelButton({ lessons }: { lessons: LessonRow[] 
       "Judul Materi": l.title ?? "-",
       Level: l.level_code ?? "-",
       Status: l.status === "published" ? "Published (Tampil)" : "Draft",
+      "Jml Soal": typeof l.question_count === "number" ? l.question_count : "-",
       // kolom tambahan (tidak wajib) – kalau tidak dibutuhkan bisa dihapus:
       Kategori: l.category ?? "-",
       Gratis: l.is_free ? "Ya" : "Tidak",
@@ -38,6 +40,7 @@ export default function DownloadExcelButton({ lessons }: { lessons: LessonRow[] 
       { wch: 50 }, // Judul
       { wch: 10 }, // Level
       { wch: 20 }, // Status
+      { wch: 10 }, // Jml Soal
       { wch: 14 }, // Kategori
       { wch: 10 }, // Gratis
       { wch: 22 }, // Diperbarui

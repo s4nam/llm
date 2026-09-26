@@ -43,6 +43,7 @@ export default async function MateriListPage() {
                 category: l.category ? String(l.category) : undefined,
                 updated_at: l.updated_at ? String(l.updated_at) : undefined,
                 is_free: Boolean(l.is_free),
+                question_count: typeof l.question_count === "number" ? (l.question_count as number) : Array.isArray(l.quiz) ? (l.quiz as unknown[]).length : undefined,
               }))}
             />
             <Link
@@ -80,6 +81,23 @@ export default async function MateriListPage() {
                     </span>
                   )}
                   {statusBadge(l.status)}
+                  {(() => {
+                    const qc =
+                      typeof (l as Record<string, unknown>).question_count === "number"
+                        ? ((l as Record<string, unknown>).question_count as number)
+                        : Array.isArray((l as Record<string, unknown>).quiz)
+                          ? ((l as Record<string, unknown>).quiz as unknown[]).length
+                          : 0;
+                    const isOk = qc >= 20;
+                    return (
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isOk ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}
+                        title={isOk ? "Sudah 20+ soal" : "Di bawah 20 soal — perlu ditambah"}
+                      >
+                        {qc} Soal
+                      </span>
+                    );
+                  })()}
                 </div>
                 <h2 className="mt-2 font-semibold text-slate-900">{l.title}</h2>
                 <p className="text-xs text-slate-400">
