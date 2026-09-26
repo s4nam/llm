@@ -190,6 +190,7 @@ export default function AdminHeader() {
         <div className="border-t border-slate-800 p-3">
           <form action={logout}>
             <button
+              suppressHydrationWarning
               type="submit"
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
@@ -212,6 +213,7 @@ export default function AdminHeader() {
           </Link>
           <form action={logout}>
             <button
+              suppressHydrationWarning
               type="submit"
               className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
             >

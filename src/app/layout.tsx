@@ -69,9 +69,10 @@ export default function RootLayout({
   return (
     <html
       lang="id"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >{/* root layout */}
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <div className="flex flex-1 flex-col">{children}</div>
         <CookieBanner />
         <FacebookPixel />

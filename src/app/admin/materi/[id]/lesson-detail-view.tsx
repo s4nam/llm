@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { Poppins } from "next/font/google";
 import { parseYoutubeId, youtubeEmbedUrl } from "@/lib/youtube";
+
+const poppinsBold = Poppins({ subsets: ["latin"], weight: ["700"], display: "swap" });
 
 type MediaType = "classic" | "youtube" | "image";
 
@@ -197,7 +200,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
   const activeYoutubePreview = initialMedia.type === "youtube" && initialMedia.youtube_url ? youtubeEmbedUrl(initialMedia.youtube_url) : null;
 
   return (
-    <div className="mt-6 flex flex-col gap-6">
+    <div suppressHydrationWarning className="mt-6 flex flex-col gap-6">
       {message && <p className="rounded-xl bg-success/10 p-4 text-sm text-success">{message}</p>}
 
       {/* Status */}
@@ -206,7 +209,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-brand">
             {lesson.level_code} • {lesson.category} {lesson.is_free ? "• Gratis" : ""}
           </p>
-          <h2 className="mt-1 text-xl font-bold text-slate-900">{lesson.title}</h2>
+          <h2 className={`${poppinsBold.className} mt-1 text-xl text-slate-900`}>{lesson.title}</h2>
           <p className="text-sm text-slate-500">Status: {lesson.status === "published" ? "✓ Tampil untuk siswa" : "Draft (belum tampil)"}</p>
           <p className="mt-1 text-xs text-slate-400">
             Mode penjelasan:{" "}
@@ -217,7 +220,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {lesson.status === "draft" && (
-            <button
+            <button suppressHydrationWarning
               onClick={() => act("approve")}
               disabled={busy !== null}
               className="rounded-xl bg-success px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
@@ -225,7 +228,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
               {busy === "approve" ? "Menyetujui..." : "Setujui & Tampilkan"}
             </button>
           )}
-          <button
+          <button suppressHydrationWarning
             onClick={() => act("regenerate")}
             disabled={busy !== null}
             className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
@@ -233,7 +236,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
             {busy === "regenerate" ? "Mengganti..." : "Regenerate"}
           </button>
           {lesson.status === "draft" && (
-            <button
+            <button suppressHydrationWarning
               onClick={() => act("reject")}
               disabled={busy !== null}
               className="rounded-xl border border-danger px-5 py-2.5 text-sm font-semibold text-danger hover:bg-danger/5 disabled:opacity-50"
@@ -257,7 +260,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
               { id: "image", label: "🖼️ Gambar", desc: "1 gambar upload" },
             ] as const
           ).map((opt) => (
-            <button
+            <button suppressHydrationWarning
               key={opt.id}
               type="button"
               onClick={() => setMediaType(opt.id)}
@@ -279,7 +282,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
           <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-4">
             <p className="text-sm text-slate-600">Mode Teks — siswa melihat Intro & Sections (hasil AI) sebelum soal.</p>
             {initialMedia.type !== "classic" ? (
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={setClassic}
                 disabled={mediaBusy}
@@ -297,7 +300,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
         {mediaType === "youtube" && (
           <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">Link YouTube</label>
-            <input
+            <input suppressHydrationWarning
               type="url"
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
@@ -318,7 +321,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
                 </div>
               </div>
             )}
-            <button
+            <button suppressHydrationWarning
               type="button"
               onClick={saveYoutube}
               disabled={mediaBusy}
@@ -336,7 +339,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
         {mediaType === "image" && (
           <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">Upload Gambar (1 gambar, maks 5MB — JPG/PNG/WEBP/GIF)</label>
-            <input
+            <input suppressHydrationWarning
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={onImageChange}
@@ -351,7 +354,7 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
                   alt="Preview materi"
                   className="max-h-[380px] w-full rounded-xl border border-slate-200 object-contain bg-white"
                 />
-                <button
+                <button suppressHydrationWarning
                   type="button"
                   onClick={removeImageToClassic}
                   disabled={mediaBusy}
@@ -369,22 +372,22 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
       {/* Intro — tetap tampil di admin, beri badge bila hidden */}
       <div className={`rounded-2xl border p-6 ${mediaType === "classic" ? "border-slate-200 bg-surface" : "border-amber-200 bg-amber-50/40"}`}>
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-slate-900">Intro</h3>
+          <h3 className={`${poppinsBold.className} text-slate-900`}>Intro</h3>
           {mediaType !== "classic" && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Disembunyikan dari siswa (mode {mediaType})</span>}
         </div>
-        <p className="mt-2 text-justify leading-7 text-slate-700">{lesson.intro}</p>
+        <p className={`${poppinsBold.className} mt-2 text-justify leading-7 text-slate-700`}>{lesson.intro}</p>
       </div>
 
       {/* Sections */}
       {lesson.sections.map((s, i) => (
         <div key={i} className={`rounded-2xl border p-6 ${mediaType === "classic" ? "border-slate-200 bg-white" : "border-amber-200 bg-amber-50/30"}`}>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-900">{s.heading}</h3>
+            <h3 className={`${poppinsBold.className} text-slate-900`}>{s.heading}</h3>
             {mediaType !== "classic" && i === 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Hidden</span>}
           </div>
           {lesson.category === "listening" && i === 0 && (
             <div className="mt-3">
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={() => speak(s.body)}
                 disabled={!ttsSupported}
@@ -395,22 +398,22 @@ export default function LessonDetailView({ lesson }: { lesson: LessonDetail }) {
               {!ttsSupported && <p className="mb-2 text-sm text-slate-500">Browser ini tidak mendukung suara. Anda tetap bisa cek transkrip di bawah.</p>}
             </div>
           )}
-          <div className="mt-2 whitespace-pre-line text-justify leading-7 text-slate-700">{s.body}</div>
+          <div className={`${poppinsBold.className} mt-2 whitespace-pre-line text-justify leading-7 text-slate-700`}>{s.body}</div>
         </div>
       ))}
 
       {/* Quiz */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="font-semibold text-slate-900">Latihan Soal ({lesson.quiz.length})</h3>
+        <h3 className={`${poppinsBold.className} text-slate-900`}>Latihan Soal ({lesson.quiz.length})</h3>
         <div className="mt-4 flex flex-col gap-5">
           {lesson.quiz.map((q, i) => (
             <div key={i}>
-              <p className="font-medium text-slate-800">
+              <p className={`${poppinsBold.className} text-slate-800`}>
                 {i + 1}. {q.question}
               </p>
               <ul className="mt-2 flex flex-col gap-1.5">
                 {q.options.map((opt, oi) => (
-                  <li key={oi} className={`rounded-lg px-3 py-2 text-sm ${oi === q.answerIndex ? "bg-success/10 font-medium text-success" : "bg-surface text-slate-600"}`}>
+                  <li key={oi} className={`${poppinsBold.className} rounded-lg px-3 py-2 text-sm ${oi === q.answerIndex ? "bg-success/10 text-success" : "bg-surface text-slate-600"}`}>
                     {String.fromCharCode(65 + oi)}. {opt}
                     {oi === q.answerIndex && " ✓ (jawaban)"}
                   </li>

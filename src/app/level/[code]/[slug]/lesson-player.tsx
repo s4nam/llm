@@ -7,6 +7,9 @@ import LessonGames from "@/components/lesson-games";
 import SaveToStudySet from "@/components/save-to-study-set";
 import ReportProblem from "@/components/report-problem";
 import { youtubeEmbedUrl } from "@/lib/youtube";
+import { Poppins } from "next/font/google";
+
+const poppinsBold = Poppins({ subsets: ["latin"], weight: ["700"], display: "swap" });
 
 const FREE_STORAGE_KEY = "em_free_progress";
 
@@ -235,13 +238,13 @@ export default function LessonPlayer({
         <>
           {/* Classic: Intro */}
           <div className="rounded-2xl border border-slate-200 bg-surface p-6">
-            <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
+            <p className={`${poppinsBold.className} text-justify leading-7 text-slate-700`}>{lesson.intro}</p>
           </div>
 
           {/* Classic: Sections */}
           {lesson.sections.map((section, sIdx) => (
             <section key={section.heading} className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h2 className="text-xl font-semibold text-slate-900">{section.heading}</h2>
+              <h2 className={`${poppinsBold.className} text-xl text-slate-900`}>{section.heading}</h2>
               {lesson.category === "listening" && sIdx === 0 ? (
                 <div className="mt-3">
                   <button
@@ -257,12 +260,12 @@ export default function LessonPlayer({
                       Perangkat Anda tidak mendukung suara. Baca transkrip di bawah ini.
                     </p>
                   )}
-                  <div className="whitespace-pre-line rounded-xl bg-surface p-4 text-justify leading-7 text-slate-700">
+                  <div className={`${poppinsBold.className} whitespace-pre-line rounded-xl bg-surface p-4 text-justify leading-7 text-slate-700`}>
                     {section.body}
                   </div>
                 </div>
               ) : (
-                <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
+                <div className={`${poppinsBold.className} mt-3 whitespace-pre-line text-justify leading-7 text-slate-700`}>
                   {lesson.category === "vocabulary" && section.heading.toLowerCase().includes("kosakata") ? (
                     <>
                       <VocabularyList body={section.body} onSpeak={speak} speakingId={speakingId} />

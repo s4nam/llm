@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Poppins } from "next/font/google";
 import { requireAdmin } from "@/lib/admin-guard";
 import AdminHeader from "../../admin-header";
 import { CATEGORY_LABELS } from "@/lib/types";
 import DownloadExcelButton from "./download-excel-button";
+
+const poppinsBold = Poppins({
+  subsets: ["latin"],
+  weight: ["700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Daftar Materi",
@@ -91,7 +98,7 @@ export default async function MateriListPage() {
                     const isOk = qc >= 20;
                     return (
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isOk ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}
+                        className={`${poppinsBold.className} rounded-full px-2.5 py-0.5 text-xs ${isOk ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}
                         title={isOk ? "Sudah 20+ soal" : "Di bawah 20 soal — perlu ditambah"}
                       >
                         {qc} Soal
@@ -99,7 +106,7 @@ export default async function MateriListPage() {
                     );
                   })()}
                 </div>
-                <h2 className="mt-2 font-semibold text-slate-900">{l.title}</h2>
+                <h2 className={`${poppinsBold.className} mt-2 text-slate-900`}>{l.title}</h2>
                 <p className="text-xs text-slate-400">
                   Diperbarui {new Date(l.updated_at).toLocaleString("id-ID")}
                 </p>

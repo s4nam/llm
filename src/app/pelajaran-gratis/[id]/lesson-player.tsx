@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Poppins } from "next/font/google";
 import type { FreeLesson } from "@/lib/types";
 import LessonGames from "@/components/lesson-games";
 import ReportProblem from "@/components/report-problem";
+
+const poppinsBold = Poppins({ subsets: ["latin"], weight: ["700"], display: "swap" });
 
 const STORAGE_KEY = "em_free_progress";
 type Stored = Record<string, { completed: boolean; bestScore: number }>;
@@ -150,16 +153,16 @@ export default function LessonPlayer({
     <div className="mt-6 flex flex-col gap-6">
       {/* Intro */}
       <div className="rounded-2xl border border-slate-200 bg-surface p-6">
-        <p className="text-justify leading-7 text-slate-700">{lesson.intro}</p>
+        <p className={`${poppinsBold.className} text-justify leading-7 text-slate-700`}>{lesson.intro}</p>
       </div>
 
       {/* Sections */}
       {lesson.sections.map((section) => (
         <section key={section.heading} className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-slate-900">
+          <h2 className={`${poppinsBold.className} text-xl text-slate-900`}>
             {section.heading}
           </h2>
-          <div className="mt-3 whitespace-pre-line text-justify leading-7 text-slate-700">
+          <div className={`${poppinsBold.className} mt-3 whitespace-pre-line text-justify leading-7 text-slate-700`}>
             {section.body}
           </div>
         </section>
@@ -189,7 +192,7 @@ export default function LessonPlayer({
               }`}
             >
               <p className="text-xs font-medium text-slate-400">Soal {qIndex + 1}</p>
-              <p className="mt-2 font-medium text-slate-800">{q.question}</p>
+              <p className={`${poppinsBold.className} mt-2 text-slate-800`}>{q.question}</p>
               {q.questionEN && q.question !== q.questionEN && (
                 <p className="mt-1 text-sm italic text-slate-500">{q.questionEN}</p>
               )}
